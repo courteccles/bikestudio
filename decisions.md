@@ -34,6 +34,7 @@ bikestudio is a free, open-source Linux and macOS app where boutique and hobby b
 | D22 | S-LINK keeps the Newton-Raphson fallback alongside the analytic four-bar solver in version 1. | Confirmed |
 | D23 | Version 1 clearance is 2D only. The tire envelope is the outer diameter for the wheel size, using the most common sidewall, from `wheel_size.toml`. No tire width input. | Confirmed |
 | D24 | Architecture: a `bike-export` crate owns exports (reads `Project` and `Solved` only); naive tubes live in `bike-geometry`; export libraries are `dxf`, `svg`, `csv`, and `printpdf` or `krilla` (to be evaluated). | Confirmed |
+| D25 | Project files use the `.bikestud` extension. The mockups in `designer experience images/` and `junk drawer/` show bikestudio and `.bikestud`. | Confirmed |
 
 ## Conflicts with the current plan
 

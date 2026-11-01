@@ -57,13 +57,13 @@ One crate per concern keeps compile times low, enforces boundaries, and lets con
 - **Math: `glam`** for two-dimensional vectors. `nalgebra` only for small linear solves (Newton steps).
 - **Units:** newtypes (`Millimeters(f64)`, `Degrees(f64)`) rather than `uom`. They're lighter and still prevent unit-mixing bugs. Everything is stored and solved in millimetres and degrees; the user interface can display and accept inches, and exports use the unit the user selects.
 - **Export:** `dxf` for the DXF sketch, `svg` for the drawing, a PDF writer (`printpdf` or `krilla`, to be evaluated), and `csv` for the named-values table.
-- **Serialization: `serde` + `serde_json`** for `.bikestudio` files, with a `schema_version` and migrations from day one.
+- **Serialization: `serde` + `serde_json`** for `.bikestud` files, with a `schema_version` and migrations from day one.
 - **Component, rider and reference data:** TOML files, so values can be tweaked without touching Rust and the community can contribute through pull requests. Every entry cites its source.
 - **Default presets:** each preset is an enum named `<StructName>Defaults` (for example, `RiderDefaults` for `Rider`), defined in `bike-model`. Its values live in `bike-defaults/<struct>.toml` (for example, `bike-defaults/rider.toml`) and are embedded at compile time with `include_str!`. Tests check that every file parses and covers every enum variant, and that a project whose wheel size key is missing from `wheel_size.toml` still loads with a diagnostic. Move components to `rusqlite` only if the library grows large.
 - **Concurrency: `rayon`** for parallel sweeps (for example, anti-squat per gear). A worker thread with `crossbeam-channel` runs the optimizer.
 - **Optimization:** the `cmaes` crate or `argmin`. Nelder-Mead is simple to hand-roll.
 - **Testing:** `approx` (float comparisons), `proptest` (solver invariants), `insta` (curve snapshots), `criterion` (performance budgets).
-- **Assistant (post-version 1):** the Claude API (Messages API with tool use) over `reqwest`, with web search and web fetch as server-side tools. Defaults to the latest Claude model, configurable. The API key comes from the user's settings or the `ANTHROPIC_API_KEY` environment variable and is stored in the operating system keychain (`keyring`), never in a `.bikestudio` file.
+- **Assistant (post-version 1):** the Claude API (Messages API with tool use) over `reqwest`, with web search and web fetch as server-side tools. Defaults to the latest Claude model, configurable. The API key comes from the user's settings or the `ANTHROPIC_API_KEY` environment variable and is stored in the operating system keychain (`keyring`), never in a `.bikestud` file.
 - **Platforms:** Linux and macOS in version 1; Windows later.
 - **Licence:** MIT OR Apache-2.0, dual-licensed, covering code and data.
 - **Later:** a three-dimensional view, either through GPUI's renderer or an embedded `wgpu` surface (to be evaluated). Finite element analysis sits behind a trait so a solver can be swapped in.
@@ -430,7 +430,7 @@ Point values in this table are read at sag; curves span the full travel.
 ### Display preferences
 
 - The dimension filter and the outline radius are display preferences, not model data. They are not saved in `Project`, do not affect `Solved`, and do not create undo steps.
-- **Theme:** an app setting (Settings › Appearance), stored with the user's settings rather than in a `.bikestudio` file.
+- **Theme:** an app setting (Settings › Appearance), stored with the user's settings rather than in a `.bikestud` file.
   - **Dark:** the default. The side view is a dark grid with shaded parts.
   - **Drafting:** the side view, under the trays too, becomes an engineer's hand drafting: pencil on vellum with a light grid, linework only with no fills, ruled lines that run slightly past their ends, line weight by importance (frame and fork, then wheels, then dimension and centre lines), and upper-case lettering between faint guide lines. The rest of the window keeps the dark chrome.
   - Both themes draw the same scene from `Solved`; the theme only changes how it is rendered.
