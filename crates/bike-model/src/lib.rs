@@ -6,4 +6,8 @@ mod project;
 mod units;
 
 pub use project::{CURRENT_SCHEMA_VERSION, LoadError, Project, WheelSize};
-pub use units::{Degrees, Millimeters};
+pub use units::{
+    ANGLE_DECIMALS, ANGLE_LABEL, Degrees, LengthUnit, MM_PER_INCH, Millimeters, ParseError,
+    TRAVEL_UNIT, commit_angle, commit_length, format_angle, format_length, parse_angle,
+    parse_length,
+};
