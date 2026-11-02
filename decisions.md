@@ -49,7 +49,7 @@ Build order. Each spec depends only on specs above it.
 
 | # | Spec | Scope | Source |
 |---|---|---|---|
-| 1 | S-REF | Reference test set: linkage reference tool, 3–5 geometry charts, known answers | D14 |
+| 1 | S-REF | Reference test set: linkage reference tool, 5 Nicolai geometry charts, known answers | D14 |
 | 2 | S-MODEL | Workspace, CI, unit newtypes, `Project` types, versioned save and load | Plan Phase 0 |
 | 3 | S-UNITS | Inch/mm display and input conversion, export unit setting | D18 |
 | 4 | S-GEOM | Pinned/free geometry solver and constraint diagnostics | D3 |

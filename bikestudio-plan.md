@@ -152,7 +152,8 @@ pub struct Cockpit {                    // places the hands, saddle and pedals
     pub bar_rise: Option<Millimeters>,
     pub bar_width: Option<Millimeters>,
     pub spacers: Option<Millimeters>,
-    pub crank_length: Option<Millimeters>,
+    pub crank_length: Option<Millimeters>, // None = default by rider size (S-GEOM G13)
+    pub pedal: Option<PedalSize>,          // platform length and thickness; None = 100 × 20 mm
     pub saddle_setback: Option<Millimeters>,
 }                                      // None fields use bike-defaults/cockpit.toml
 
@@ -163,7 +164,10 @@ pub enum ComponentReference<T> { Library(ComponentIdentifier), Custom(T) } // Li
 pub struct GeometryInputs { pub variables: EnumMap<GeometryVariable, Parameter> }
 pub enum Parameter { Pinned(f64), Free }
 pub enum GeometryVariable {
-    Stack, Reach, HeadTubeAngle, SeatTubeAngle, BottomBracketDrop,
+    Stack, Reach, HeadTubeAngle, HeadTubeLength, // head tube length includes the lower headset stack
+    EffectiveSeatTubeAngle, // crank centre to the saddle point, at stack height (S-GEOM G4)
+    ActualSeatTubeAngle,    // the seat tube axis through the saddle point
+    BottomBracketDrop,      // from the midpoint of the line between the axles, vertically to the crank centre
     ChainstayLength, Wheelbase, BottomBracketHeight,
 }
 
@@ -499,7 +503,7 @@ Version 1 is built as small, separately testable specs, in this order. Each spec
 
 | # | Spec | Scope | Done when |
 |---|---|---|---|
-| 1 | S-REF | Reference test set: 3–5 published geometry charts, 6 synthetic linkage frames, and reference calculator answers | Known answers are recorded as test fixtures |
+| 1 | S-REF | Reference test set: 5 Nicolai geometry charts (gathered in S-GEOM), 6 synthetic linkage frames, and reference calculator answers | Known answers are recorded as test fixtures |
 | 2 | S-MODEL | Workspace, CI (fmt, clippy, tests on Linux and macOS), unit newtypes, `Project` types, versioned save and load | An empty and a filled-in project both round-trip to JSON |
 | 3 | S-UNITS | Inch and millimetre display and input, export unit setting | Values round-trip between units without drift |
 | 4 | S-GEOM | Pinned/free geometry solver and constraint diagnostics | S-REF geometry charts reproduce within ±3 mm and ±0.3° (R6) |
