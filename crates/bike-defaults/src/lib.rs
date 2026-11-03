@@ -14,6 +14,7 @@ use serde::Deserialize;
 const WHEEL_SIZE_TOML: &str = include_str!("../data/wheel_size.toml");
 const FORK_TOML: &str = include_str!("../data/fork.toml");
 const GEOMETRY_TOML: &str = include_str!("../data/geometry.toml");
+const TUBES_TOML: &str = include_str!("../data/tubes.toml");
 
 /// All default tables.
 #[derive(Debug, Clone, PartialEq)]
@@ -21,6 +22,7 @@ pub struct Defaults {
     pub wheel_sizes: WheelSizes,
     pub forks: Forks,
     pub geometry: GeometryDefaults,
+    pub tubes: TubeDefaults,
 }
 
 /// `wheel_size.toml`: outer diameter by wheel size key.
@@ -72,6 +74,7 @@ pub struct GeometryDefaults {
     pub default_wheel: String,
     pub pedal: PedalDefaults,
     pub cranks: CrankDefaults,
+    pub seat_tube_length: SeatTubeLengthDefaults,
     pub bikes: Vec<DefaultBike>,
 }
 
@@ -91,6 +94,106 @@ pub struct CrankDefaults {
     pub medium: f64,
     pub large: f64,
     pub source: String,
+}
+
+/// Seat tube length by rider size preset (S-TUBES T2). Until S-MASS adds the rider, Medium is used.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SeatTubeLengthDefaults {
+    pub small: f64,
+    pub medium: f64,
+    pub large: f64,
+    pub source: String,
+}
+
+/// `tubes.toml`: materials, default sections, junctions and fittings (S-TUBES).
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct TubeDefaults {
+    /// A key in `materials`.
+    pub default_material: String,
+    pub bottom_bracket_shell_width: f64,
+    pub bottom_bracket_shell_source: String,
+    pub junctions: JunctionDefaults,
+    pub materials: BTreeMap<String, MaterialEntry>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct JunctionDefaults {
+    pub top_tube_below_head_tube_top: f64,
+    pub down_tube_above_head_tube_bottom: f64,
+    pub seat_tube_overhang: f64,
+    /// The seat tube must reach at least this far below its junction (T2).
+    pub min_seat_tube_below_junction: f64,
+    pub source: String,
+}
+
+/// One material: density (g/cm3), default `[outside diameter, wall]` per tube, fittings.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MaterialEntry {
+    pub density: f64,
+    pub density_source: String,
+    pub sections_source: String,
+    pub head_tube: [f64; 2],
+    pub top_tube: [f64; 2],
+    pub down_tube: [f64; 2],
+    pub seat_tube: [f64; 2],
+    pub chainstay: [f64; 2],
+    pub seatstay: [f64; 2],
+    pub bottom_bracket_shell: [f64; 2],
+    pub fittings: Vec<FittingEntry>,
+    pub fittings_source: String,
+}
+
+impl MaterialEntry {
+    /// The default `[outside diameter, wall]` for a tube, by its `tubes.toml` key.
+    pub fn section(&self, tube_key: &str) -> Option<[f64; 2]> {
+        Some(match tube_key {
+            "head_tube" => self.head_tube,
+            "top_tube" => self.top_tube,
+            "down_tube" => self.down_tube,
+            "seat_tube" => self.seat_tube,
+            "chainstay" => self.chainstay,
+            "seatstay" => self.seatstay,
+            "bottom_bracket_shell" => self.bottom_bracket_shell,
+            _ => return None,
+        })
+    }
+
+    fn sections(&self) -> [[f64; 2]; 7] {
+        [
+            self.head_tube,
+            self.top_tube,
+            self.down_tube,
+            self.seat_tube,
+            self.chainstay,
+            self.seatstay,
+            self.bottom_bracket_shell,
+        ]
+    }
+}
+
+/// Where a fitting's mass sits (T5).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FittingPlace {
+    RearAxle,
+    CrankCentre,
+    HeadTube,
+    SeatTubeTop,
+    /// At the tubes' combined centre of mass (welds, bosses spread over the frame).
+    Tubes,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FittingEntry {
+    pub name: String,
+    /// Grams.
+    pub mass: f64,
+    pub at: FittingPlace,
 }
 
 /// A starting bike for some wheel sizes and front travel range.
@@ -139,19 +242,21 @@ pub enum DefaultsError {
 impl Defaults {
     /// The built-in tables, parsed and validated.
     pub fn builtin() -> Result<Self, DefaultsError> {
-        Self::from_toml(WHEEL_SIZE_TOML, FORK_TOML, GEOMETRY_TOML)
+        Self::from_toml(WHEEL_SIZE_TOML, FORK_TOML, GEOMETRY_TOML, TUBES_TOML)
     }
 
-    /// Parses and validates the three tables.
+    /// Parses and validates the four tables.
     pub fn from_toml(
         wheel_sizes: &str,
         forks: &str,
         geometry: &str,
+        tubes: &str,
     ) -> Result<Self, DefaultsError> {
         let defaults = Self {
             wheel_sizes: parse("wheel_size.toml", wheel_sizes)?,
             forks: parse("fork.toml", forks)?,
             geometry: parse("geometry.toml", geometry)?,
+            tubes: parse("tubes.toml", tubes)?,
         };
         defaults.validate()?;
         Ok(defaults)
@@ -242,6 +347,75 @@ impl Defaults {
                 "cranks and pedal need positive sizes".into(),
             );
         }
+        let seat = &g.seat_tube_length;
+        if [seat.small, seat.medium, seat.large]
+            .iter()
+            .any(|v| !(*v > 0.0))
+            || seat.source.trim().is_empty()
+        {
+            return invalid(
+                "geometry.toml",
+                "seat tube lengths need positive values and a source".into(),
+            );
+        }
+        self.validate_tubes()
+    }
+
+    fn validate_tubes(&self) -> Result<(), DefaultsError> {
+        let invalid = |message: String| {
+            Err(DefaultsError::Invalid {
+                file: "tubes.toml",
+                message,
+            })
+        };
+        let t = &self.tubes;
+        if !t.materials.contains_key(&t.default_material) {
+            return invalid(format!(
+                "default_material {} isn't a material",
+                t.default_material
+            ));
+        }
+        for key in ["steel", "aluminium", "titanium", "carbon"] {
+            if !t.materials.contains_key(key) {
+                return invalid(format!("no material {key}"));
+            }
+        }
+        let j = &t.junctions;
+        if [
+            j.top_tube_below_head_tube_top,
+            j.down_tube_above_head_tube_bottom,
+            j.seat_tube_overhang,
+            j.min_seat_tube_below_junction,
+        ]
+        .iter()
+        .any(|v| !(*v >= 0.0))
+            || j.source.trim().is_empty()
+            || !(t.bottom_bracket_shell_width > 0.0)
+            || t.bottom_bracket_shell_source.trim().is_empty()
+        {
+            return invalid("junctions and BB shell need valid values and sources".into());
+        }
+        for (key, m) in &t.materials {
+            let sections_ok = m
+                .sections()
+                .iter()
+                .all(|[d, w]| *d > 0.0 && *w > 0.0 && *w < d / 2.0);
+            let fittings_ok = m
+                .fittings
+                .iter()
+                .all(|f| f.mass >= 0.0 && !f.name.trim().is_empty());
+            if !(m.density > 0.0)
+                || !sections_ok
+                || !fittings_ok
+                || [&m.density_source, &m.sections_source, &m.fittings_source]
+                    .iter()
+                    .any(|s| s.trim().is_empty())
+            {
+                return invalid(format!(
+                    "material {key} needs a positive density, walls under half the diameter, valid fittings and sources"
+                ));
+            }
+        }
         Ok(())
     }
 }
@@ -272,7 +446,8 @@ mod tests {
 
     #[test]
     fn a_malformed_table_is_an_error() {
-        let err = Defaults::from_toml("sizes = 3", FORK_TOML, GEOMETRY_TOML).unwrap_err();
+        let err =
+            Defaults::from_toml("sizes = 3", FORK_TOML, GEOMETRY_TOML, TUBES_TOML).unwrap_err();
         assert!(err.to_string().starts_with("wheel_size.toml"), "{err}");
     }
 
@@ -282,6 +457,22 @@ mod tests {
             "source = \"Nicolai S16 MGU 2026 tech sheet: tyre diameter 745 mm (29 x 2.4).\"",
             "source = \"\"",
         );
-        assert!(Defaults::from_toml(&wheels, FORK_TOML, GEOMETRY_TOML).is_err());
+        assert!(Defaults::from_toml(&wheels, FORK_TOML, GEOMETRY_TOML, TUBES_TOML).is_err());
+    }
+
+    #[test]
+    fn tube_defaults_cover_every_material() {
+        let defaults = Defaults::builtin().unwrap();
+        assert_eq!(defaults.tubes.materials.len(), 4);
+        assert_eq!(defaults.tubes.junctions.seat_tube_overhang, 60.0);
+        assert_eq!(defaults.geometry.seat_tube_length.medium, 450.0);
+    }
+
+    #[test]
+    fn a_wall_too_thick_for_its_tube_is_an_error() {
+        let tubes = TUBES_TOML.replace("head_tube = [44.5, 1.1]", "head_tube = [44.5, 30.0]");
+        let err =
+            Defaults::from_toml(WHEEL_SIZE_TOML, FORK_TOML, GEOMETRY_TOML, &tubes).unwrap_err();
+        assert!(err.to_string().starts_with("tubes.toml"), "{err}");
     }
 }

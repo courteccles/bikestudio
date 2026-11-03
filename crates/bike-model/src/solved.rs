@@ -3,6 +3,7 @@
 use std::collections::BTreeMap;
 
 use crate::geometry::GeometryVariable;
+use crate::tubes::{Material, TubeKind};
 
 /// How serious a diagnostic is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -120,5 +121,60 @@ pub struct SolvedGeometry {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Solved {
     pub geometry: Option<SolvedGeometry>,
+    pub tubes: Option<SolvedTubes>,
     pub diagnostics: Vec<Diagnostic>,
+}
+
+/// One tube (or pair) of the frame, in the static frame (S-TUBES).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Tube {
+    pub kind: TubeKind,
+    /// Centreline start and end. The BB shell runs across the frame, so both are the crank centre.
+    pub start: Point,
+    pub end: Point,
+    /// Centreline length in mm; for the BB shell, its width.
+    pub length: f64,
+    pub outside_diameter: f64,
+    pub wall: f64,
+    /// 2 for the stays (T5).
+    pub count: u32,
+    /// Grams, all `count` tubes together.
+    pub mass: f64,
+    pub centre_of_mass: Point,
+    /// `Pinned` when the project overrides it, else `Default`.
+    pub diameter_source: ValueSource,
+    pub wall_source: ValueSource,
+}
+
+/// A fittings allowance (dropouts, bosses, welds) placed at a fixed point (T5).
+#[derive(Debug, Clone, PartialEq)]
+pub struct TubeFitting {
+    pub name: String,
+    /// Grams.
+    pub mass: f64,
+    pub position: Point,
+}
+
+/// The naive tube frame (S-TUBES).
+#[derive(Debug, Clone, PartialEq)]
+pub struct SolvedTubes {
+    pub material: Material,
+    pub material_source: ValueSource,
+    pub seat_tube_length: f64,
+    pub seat_tube_length_source: ValueSource,
+    pub seat_tube_overhang: f64,
+    pub top_tube_below_head_tube_top: f64,
+    pub down_tube_above_head_tube_bottom: f64,
+    pub seat_tube_top: Point,
+    pub tubes: Vec<Tube>,
+    pub fittings: Vec<TubeFitting>,
+    /// Grams: tubes plus fittings.
+    pub frame_mass: f64,
+    pub frame_centre_of_mass: Point,
+}
+
+impl SolvedTubes {
+    pub fn tube(&self, kind: TubeKind) -> Option<&Tube> {
+        self.tubes.iter().find(|t| t.kind == kind)
+    }
 }

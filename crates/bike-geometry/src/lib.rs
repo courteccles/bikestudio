@@ -18,6 +18,8 @@
 // `!(x > 0.0)` is deliberate throughout: unlike `x <= 0.0`, it also rejects NaN.
 #![allow(clippy::neg_cmp_op_on_partial_ord)]
 
+mod tubes;
+
 use std::collections::BTreeMap;
 
 use bike_defaults::{DefaultBike, Defaults};
@@ -25,6 +27,8 @@ use bike_model::{
     Diagnostic, FramePoints, GeometryState, GeometryVariable as V, Point, Project, Severity,
     SolvedGeometry, ValueSource,
 };
+
+pub use tubes::{solve_tubes, tube_mass};
 
 /// Pinned values that disagree by more than this are a conflict (G6).
 pub const CONFLICT_TOLERANCE_MM: f64 = 1.0;

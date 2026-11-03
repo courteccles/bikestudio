@@ -5,6 +5,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::geometry::{CrankSetup, ForkOverrides, GeometryInputs};
+use crate::tubes::TubeInputs;
 use crate::units::Millimeters;
 
 /// The schema version this build reads and writes.
@@ -40,6 +41,9 @@ pub struct Project {
     /// Crank and pedal for clearance (S-GEOM G13).
     #[serde(default)]
     pub crank: CrankSetup,
+    /// Material, seat tube length, junctions and sections (S-TUBES).
+    #[serde(default)]
+    pub tubes: TubeInputs,
 }
 
 impl Default for Project {
@@ -53,6 +57,7 @@ impl Default for Project {
             geometry: GeometryInputs::default(),
             fork: ForkOverrides::default(),
             crank: CrankSetup::default(),
+            tubes: TubeInputs::default(),
         }
     }
 }

@@ -83,3 +83,10 @@ bottom_bracket_height = 352.0
 wheelbase = 1299.0
 fork_sag = 0.2
 source = "Nicolai G1 29\" size M (head tube includes the lower headset stack); actual seat angle estimated."
+
+# Seat tube length by rider size preset (S-TUBES T2). Until S-MASS adds the rider, Medium is used.
+[seat_tube_length]
+small = 410.0
+medium = 450.0
+large = 480.0
+source = "Rounded from the Nicolai G1, Argon GTB GPI and S16 MGU sizes S, M and L (405-415, 435-460, 450-490 mm)."

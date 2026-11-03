@@ -9,6 +9,7 @@ fork_offset = 44.0
 lower_headset_stack = 3.0
 front_travel = 120.0
 notes = [
+  "Seat tube overhang is the chart's 'Sitzrohrüberstand' (English label 'seat tube offset'): the seat tube above the top tube junction.",
   "Pinion gearbox hardtail, 100-130 mm fork. Axle-to-crown is the chart's fork reference measurement.",
   "The chart gives tyre sizes as 27.5\" (size S) and 29\" without diameters; bikestudio's wheel_size.toml diameters (715 mm, 745 mm) are used.",
   "The chainstay is adjustable (S 440-465 mm, others 448-473 mm); the shortest setting is used.",
@@ -17,6 +18,8 @@ notes = [
 
 [[sizes]]
 size = "S"
+seat_tube_length = 405.0
+seat_tube_overhang = 40.0
 front_tyre_diameter = 715.0
 rear_tyre_diameter = 715.0
 stack = 623.0
@@ -48,6 +51,8 @@ reason = "The chart's head tube length, BB drop and wheelbase don't agree with i
 
 [[sizes]]
 size = "M"
+seat_tube_length = 460.0
+seat_tube_overhang = 60.0
 stack = 630.0
 reach = 455.0
 head_tube_angle = 67.5
@@ -77,6 +82,8 @@ reason = "The chart's head tube length, BB drop and wheelbase don't agree with i
 
 [[sizes]]
 size = "L"
+seat_tube_length = 490.0
+seat_tube_overhang = 60.0
 stack = 630.0
 reach = 475.0
 head_tube_angle = 67.5
@@ -106,6 +113,8 @@ reason = "The chart's head tube length, BB drop and wheelbase don't agree with i
 
 [[sizes]]
 size = "XL"
+seat_tube_length = 515.0
+seat_tube_overhang = 60.0
 stack = 640.0
 reach = 495.0
 head_tube_angle = 67.5
@@ -141,6 +150,8 @@ reason = "The chart's head tube length, BB drop and wheelbase don't agree with i
 
 [[sizes]]
 size = "XXL"
+seat_tube_length = 545.0
+seat_tube_overhang = 60.0
 stack = 660.0
 reach = 515.0
 head_tube_angle = 67.5

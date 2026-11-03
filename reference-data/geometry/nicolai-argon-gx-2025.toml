@@ -7,14 +7,20 @@ rear_tyre_diameter = 705.0
 fork_axle_to_crown = 395.0
 fork_offset = 47.0
 lower_headset_stack = 3.0
+frame_material = "aluminium"
+frame_weight = 1.90
 notes = [
   "Fork: MOQUAI Gravel carbon, rigid. Axle-to-crown is the chart's fork reference measurement.",
   "Lower headset stack is 3 mm for XS to XL and 13 mm for XXL; XXL overrides it.",
+  "Frame weight 1.90 kg is the chart's 'Gewicht' (frame only, size not stated).",
+  "Seat tube overhang is the chart's 'Sitzrohrüberstand' (English label 'Seattube offset'): the seat tube above the top tube junction.",
   "The chart's seat angle doesn't say whether it's effective or actual, so it isn't pinned.",
 ]
 
 [[sizes]]
 size = "XS"
+seat_tube_length = 460.0
+seat_tube_overhang = 35.0
 stack = 548.0
 reach = 371.0
 head_tube_angle = 70.5
@@ -25,6 +31,8 @@ wheelbase = 1012.0
 
 [[sizes]]
 size = "S"
+seat_tube_length = 490.0
+seat_tube_overhang = 50.0
 stack = 559.0
 reach = 380.0
 head_tube_angle = 70.5
@@ -47,6 +55,8 @@ reason = "The wheelbase doesn't follow from the chart's other values; sizes M an
 
 [[sizes]]
 size = "M"
+seat_tube_length = 510.0
+seat_tube_overhang = 50.0
 stack = 575.0
 reach = 390.0
 head_tube_angle = 71.0
@@ -57,6 +67,8 @@ wheelbase = 1036.0
 
 [[sizes]]
 size = "L"
+seat_tube_length = 530.0
+seat_tube_overhang = 50.0
 stack = 596.0
 reach = 403.0
 head_tube_angle = 71.0
@@ -79,6 +91,8 @@ reason = "The wheelbase doesn't follow from the chart's other values; sizes M an
 
 [[sizes]]
 size = "XL"
+seat_tube_length = 550.0
+seat_tube_overhang = 50.0
 stack = 606.0
 reach = 410.0
 head_tube_angle = 71.5
@@ -89,6 +103,8 @@ wheelbase = 1062.0
 
 [[sizes]]
 size = "XXL"
+seat_tube_length = 570.0
+seat_tube_overhang = 50.0
 stack = 625.0
 reach = 424.0
 head_tube_angle = 71.5

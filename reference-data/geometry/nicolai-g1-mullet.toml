@@ -10,6 +10,7 @@ lower_headset_stack = 4.0
 front_travel = 170.0
 rear_travel = 162.0
 notes = [
+  "Seat tube overhang is the chart's 'Sitzrohrüberstand' (English label 'seat tube offset'): the seat tube above the top tube junction.",
   "Fork axle-to-crown 582 mm at 170 mm travel, from the chart.",
   "The chart gives the lower headset stack as 3-5 mm; the middle, 4 mm, is used.",
   "The chart gives no BB drop; the tests pin head tube length and check wheelbase and front centre.",
@@ -18,6 +19,8 @@ notes = [
 
 [[sizes]]
 size = "S"
+seat_tube_length = 415.0
+seat_tube_overhang = 47.0
 stack = 628.0
 reach = 455.0
 head_tube_angle = 63.1
@@ -29,6 +32,8 @@ front_centre = 814.0
 
 [[sizes]]
 size = "M"
+seat_tube_length = 440.0
+seat_tube_overhang = 103.0
 stack = 646.0
 reach = 478.0
 head_tube_angle = 63.0
@@ -40,6 +45,8 @@ front_centre = 844.0
 
 [[sizes]]
 size = "L"
+seat_tube_length = 450.0
+seat_tube_overhang = 115.0
 stack = 657.0
 reach = 500.0
 head_tube_angle = 63.0
@@ -63,6 +70,8 @@ reason = "The chart lists the same wheelbase and front centre as the Nicolai G1 
 
 [[sizes]]
 size = "XL"
+seat_tube_length = 475.0
+seat_tube_overhang = 115.0
 stack = 678.0
 reach = 515.0
 head_tube_angle = 63.2
@@ -80,6 +89,8 @@ reason = "The chart lists the same wheelbase and front centre as the Nicolai G1 
 
 [[sizes]]
 size = "XXL"
+seat_tube_length = 495.0
+seat_tube_overhang = 135.0
 stack = 685.0
 reach = 535.0
 head_tube_angle = 63.3

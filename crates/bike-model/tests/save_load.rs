@@ -1,6 +1,7 @@
 use bike_model::{
-    CURRENT_SCHEMA_VERSION, CrankSetup, ForkOverrides, GeometryInputs, GeometryVariable, LoadError,
-    Millimeters, PedalSize, Project, WheelSize,
+    CURRENT_SCHEMA_VERSION, CrankSetup, ForkOverrides, GeometryInputs, GeometryVariable,
+    JunctionOffsets, LoadError, Material, Millimeters, Parameter, PedalSize, Project, TubeInputs,
+    TubeKind, TubeSection, WheelSize,
 };
 
 fn filled() -> Project {
@@ -26,6 +27,23 @@ fn filled() -> Project {
                 length: Millimeters(105.0),
                 thickness: Millimeters(17.5),
             }),
+        },
+        tubes: TubeInputs {
+            material: Some(Material::Titanium),
+            seat_tube_length: Parameter::Pinned(440.0),
+            junctions: JunctionOffsets {
+                top_tube_below_head_tube_top: Some(Millimeters(30.0)),
+                down_tube_above_head_tube_bottom: None,
+                seat_tube_overhang: Some(Millimeters(103.0)),
+            },
+            sections: [(
+                TubeKind::DownTube,
+                TubeSection {
+                    outside_diameter: Some(Millimeters(44.5)),
+                    wall: Some(Millimeters(1.0)),
+                },
+            )]
+            .into(),
         },
     }
 }

@@ -1,6 +1,6 @@
 [package]
 name = "bike-geometry"
-description = "Geometry solver for bikestudio: pinned and free variables, constraint diagnostics, clearances."
+description = "Geometry solver for bikestudio: pinned and free variables, constraint diagnostics, clearances, naive tubes."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

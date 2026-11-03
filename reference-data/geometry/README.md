@@ -10,3 +10,5 @@ Conventions, matching bikestudio's:
 - Values a chart doesn't give are left out. Where a chart gives a range or a single value for every size, the file's `notes` say which value is used and why.
 - A value corrected under S-REF R7 is listed in that size's `corrections`, with the original value and the reason.
 - A value that disagrees with the chart's own other values by more than the tolerance is listed in that size's `known_gaps`: which test, which value, the gap (solved minus chart, in mm) and the reason. The tests don't hold it to ±3 mm, but they fail if its gap moves by more than 0.2 mm (S-REF "Changes after approval").
+- `seat_tube_length` is centre-to-top along the seat tube axis, and `seat_tube_overhang` is the seat tube above the top tube junction (Nicolai's "Sitzrohrüberstand"). S-TUBES pins both and checks the tubes are placed at those distances (S-TUBES T7).
+- `frame_weight` (kg) and `frame_material` are recorded where the chart gives a weight. The S-TUBES tests report it against the estimate; they don't test it.

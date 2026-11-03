@@ -1,11 +1,13 @@
 //! S-GEOM "Done when": the Nicolai charts reproduce within ±3 mm and ±0.3° (S-REF R6).
+//! S-TUBES T7: the charts' seat tube length and overhang place the tubes.
 
 use std::path::PathBuf;
 
 use bike_defaults::{Defaults, WheelSizeEntry};
-use bike_geometry::solve_geometry;
+use bike_geometry::{solve_geometry, solve_tubes};
 use bike_model::{
-    ForkOverrides, GeometryVariable as V, Millimeters, Project, Severity, SolvedGeometry, WheelSize,
+    ForkOverrides, GeometryVariable as V, Material, Millimeters, Parameter, Project, Severity,
+    SolvedGeometry, TubeKind, WheelSize,
 };
 use serde::Deserialize;
 
@@ -25,6 +27,9 @@ struct Chart {
     lower_headset_stack: f64,
     front_travel: Option<f64>,
     rear_travel: Option<f64>,
+    frame_material: Option<String>,
+    /// Kilograms.
+    frame_weight: Option<f64>,
     notes: Vec<String>,
     sizes: Vec<Size>,
 }
@@ -33,6 +38,8 @@ struct Chart {
 #[serde(deny_unknown_fields)]
 struct Size {
     size: String,
+    seat_tube_length: Option<f64>,
+    seat_tube_overhang: Option<f64>,
     front_tyre_diameter: Option<f64>,
     rear_tyre_diameter: Option<f64>,
     lower_headset_stack: Option<f64>,
@@ -314,6 +321,99 @@ fn chart_seat_angles_hold() {
             if let Some(a) = size.actual_seat_tube_angle {
                 assert!((s.value(V::ActualSeatTubeAngle) - a).abs() < 1e-9);
             }
+        }
+    }
+}
+
+/// S-TUBES T7: pinning each chart's seat tube length and overhang puts the seat
+/// tube top and the top tube junction on the seat tube axis at those distances.
+#[test]
+fn chart_seat_tubes_place_the_tubes() {
+    let mut checked = 0;
+    for chart in charts() {
+        for size in &chart.sizes {
+            let (Some(length), Some(overhang)) = (size.seat_tube_length, size.seat_tube_overhang)
+            else {
+                continue;
+            };
+            let mut project = project_for(&chart, size);
+            project.tubes.seat_tube_length = Parameter::Pinned(length);
+            project.tubes.junctions.seat_tube_overhang = Some(Millimeters(overhang));
+            let geometry = solve(&chart, size, &project);
+            let defaults = Defaults::builtin().unwrap();
+            let (tubes, diagnostics) = solve_tubes(&project, Some(&geometry), &defaults);
+            let label = format!("{} {}", chart.name, size.size);
+            let tubes = tubes.unwrap_or_else(|| panic!("{label}: {diagnostics:?}"));
+
+            let points = &geometry.static_state.points;
+            let base = points.seat_tube_at_crank_height;
+            let axis = (points.saddle.x - base.x, points.saddle.y - base.y);
+            let along = |p: bike_model::Point| {
+                let (dx, dy) = (p.x - base.x, p.y - base.y);
+                let n = axis.0.hypot(axis.1);
+                // Distance along the axis, and distance off it.
+                (
+                    (dx * axis.0 + dy * axis.1) / n,
+                    (dx * axis.1 - dy * axis.0).abs() / n,
+                )
+            };
+            let (top_along, top_off) = along(tubes.seat_tube_top);
+            let junction = tubes.tube(TubeKind::TopTube).unwrap().end;
+            let (junction_along, junction_off) = along(junction);
+            assert!(
+                (top_along - length).abs() < 0.01 && top_off < 0.01,
+                "{label}: seat tube top"
+            );
+            assert!(
+                (junction_along - (length - overhang)).abs() < 0.01 && junction_off < 0.01,
+                "{label}: top tube junction"
+            );
+            if let Some(seatstay) = tubes.tube(TubeKind::Seatstay) {
+                let (a, off) = along(seatstay.end);
+                assert!(
+                    (a - (length - overhang)).abs() < 0.01 && off < 0.01,
+                    "{label}: seatstay"
+                );
+            }
+            checked += 1;
+        }
+    }
+    assert_eq!(
+        checked, 27,
+        "every size of every chart gives a seat tube length and overhang"
+    );
+}
+
+/// S-TUBES T7: published frame weights are reported against the estimate, not tested.
+#[test]
+fn chart_frame_weights_are_reported() {
+    for chart in charts() {
+        let Some(weight) = chart.frame_weight else {
+            continue;
+        };
+        let material = match chart.frame_material.as_deref() {
+            Some("steel") => Material::Steel,
+            Some("aluminium") => Material::Aluminium,
+            Some("titanium") => Material::Titanium,
+            Some("carbon") => Material::Carbon,
+            other => panic!("{}: frame_material {other:?}", chart.name),
+        };
+        for size in &chart.sizes {
+            let mut project = project_for(&chart, size);
+            project.tubes.material = Some(material);
+            if let Some(l) = size.seat_tube_length {
+                project.tubes.seat_tube_length = Parameter::Pinned(l);
+            }
+            project.tubes.junctions.seat_tube_overhang = size.seat_tube_overhang.map(Millimeters);
+            let geometry = solve(&chart, size, &project);
+            let (tubes, _) = solve_tubes(&project, Some(&geometry), &Defaults::builtin().unwrap());
+            let estimate = tubes.unwrap().frame_mass / 1000.0;
+            println!(
+                "{} {}: estimate {estimate:.2} kg, published {weight:.2} kg ({:+.0}%)",
+                chart.name,
+                size.size,
+                (estimate / weight - 1.0) * 100.0
+            );
         }
     }
 }

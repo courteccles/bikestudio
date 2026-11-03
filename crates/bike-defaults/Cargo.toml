@@ -1,6 +1,6 @@
 [package]
 name = "bike-defaults"
-description = "Default values for bikestudio: wheel sizes, forks, starting geometry, cranks and pedals."
+description = "Default values for bikestudio: wheel sizes, forks, starting geometry, cranks, pedals and tubes."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

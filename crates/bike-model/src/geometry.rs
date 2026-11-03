@@ -78,11 +78,22 @@ impl GeometryVariable {
 }
 
 /// A geometry value pinned by the designer, or left free for the solver.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Parameter {
     Pinned(f64),
+    #[default]
     Free,
+}
+
+impl Parameter {
+    /// The pinned value, if any.
+    pub fn pinned(self) -> Option<f64> {
+        match self {
+            Parameter::Pinned(value) => Some(value),
+            Parameter::Free => None,
+        }
+    }
 }
 
 /// The designer's geometry pins. Variables not in the map are free.

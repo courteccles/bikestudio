@@ -1,7 +1,7 @@
 //! S-GEOM "Done when": round trips, sag by hand, diagnostics, pedal clearance, robustness.
 
 use bike_defaults::Defaults;
-use bike_geometry::solve_geometry;
+use bike_geometry::{solve_geometry, solve_tubes};
 use bike_model::{
     CrankSetup, Diagnostic, ForkOverrides, GeometryVariable as V, Millimeters, PedalSize, Project,
     Severity, ValueSource, WheelSize,
@@ -357,6 +357,9 @@ proptest! {
             p.geometry.pin(v, value);
         }
         let (solved, diagnostics) = solve_geometry(&p, &defaults());
+        // S-TUBES: tubes from whatever the solver returned never panic either.
+        let (tubes, tube_diagnostics) = solve_tubes(&p, solved.as_ref(), &defaults());
+        prop_assert!(tubes.is_some() || !tube_diagnostics.is_empty());
         if let Some(solved) = solved {
             prop_assert!(solved.static_state.values.values().all(|x| x.is_finite()));
         } else {

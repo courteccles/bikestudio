@@ -1,0 +1,86 @@
+# Naive tubes (S-TUBES T3, T4, T5): round sections, densities and fittings allowances.
+# These are generic starting values for mass and the side view, not fabrication data (D6).
+# Sections are [outside diameter, wall] in mm. Fitting masses are grams.
+
+default_material = "steel"
+bottom_bracket_shell_width = 73.0
+bottom_bracket_shell_source = "73 mm is the common BSA threaded mountain bike shell width."
+
+[junctions]
+top_tube_below_head_tube_top = 25.0
+down_tube_above_head_tube_bottom = 35.0
+seat_tube_overhang = 60.0
+min_seat_tube_below_junction = 50.0
+source = "S-TUBES T3. Seat tube overhang from the Nicolai Argon GTB GPI 2025 sizes M to XXL (60 mm)."
+
+[materials.steel]
+density = 7.85
+density_source = "Chromoly 4130, 7.85 g/cm3 (ASM handbook value)."
+sections_source = "Generic round chromoly sizes common in frame building; starting values, not from one catalogue."
+head_tube = [44.5, 1.1]
+top_tube = [31.8, 0.8]
+down_tube = [38.1, 0.9]
+seat_tube = [31.8, 0.9]
+chainstay = [22.2, 0.8]
+seatstay = [16.0, 0.8]
+bottom_bracket_shell = [40.0, 2.5]
+fittings = [
+  { name = "Dropouts", mass = 220.0, at = "rear_axle" },
+  { name = "Bosses, guides and brake mount", mass = 60.0, at = "tubes" },
+  { name = "Braze and weld filler", mass = 60.0, at = "tubes" },
+]
+fittings_source = "Estimate for a steel hardtail; to be checked against weighed frames."
+
+[materials.aluminium]
+density = 2.70
+density_source = "6061-T6, 2.70 g/cm3 (ASM handbook value)."
+sections_source = "Generic round 6061 sizes common in frame building; starting values, not from one catalogue."
+head_tube = [50.0, 2.0]
+top_tube = [38.0, 1.4]
+down_tube = [44.5, 1.5]
+seat_tube = [34.9, 1.6]
+chainstay = [25.0, 1.3]
+seatstay = [19.0, 1.2]
+bottom_bracket_shell = [44.0, 3.0]
+fittings = [
+  { name = "Dropouts", mass = 180.0, at = "rear_axle" },
+  { name = "Bosses, guides and brake mount", mass = 40.0, at = "tubes" },
+  { name = "Weld filler", mass = 40.0, at = "tubes" },
+]
+fittings_source = "Estimate for an aluminium hardtail; to be checked against weighed frames."
+
+[materials.titanium]
+density = 4.48
+density_source = "Ti 3Al-2.5V, 4.48 g/cm3 (ASM handbook value)."
+sections_source = "Generic round 3Al-2.5V sizes common in frame building; starting values, not from one catalogue."
+head_tube = [44.5, 1.2]
+top_tube = [35.0, 0.9]
+down_tube = [41.3, 0.9]
+seat_tube = [31.8, 0.9]
+chainstay = [22.2, 0.9]
+seatstay = [16.0, 0.9]
+bottom_bracket_shell = [40.0, 2.5]
+fittings = [
+  { name = "Dropouts", mass = 150.0, at = "rear_axle" },
+  { name = "Bosses, guides and brake mount", mass = 40.0, at = "tubes" },
+  { name = "Weld filler", mass = 30.0, at = "tubes" },
+]
+fittings_source = "Estimate for a titanium hardtail; to be checked against weighed frames."
+
+[materials.carbon]
+density = 1.55
+density_source = "Typical laminate density for structural carbon fibre/epoxy, about 1.5-1.6 g/cm3."
+sections_source = "Generic carbon tube sizes with an equivalent wall; starting values, not from one catalogue."
+head_tube = [50.0, 2.0]
+top_tube = [45.0, 1.5]
+down_tube = [55.0, 1.8]
+seat_tube = [34.9, 1.8]
+chainstay = [28.0, 1.5]
+seatstay = [20.0, 1.2]
+bottom_bracket_shell = [46.0, 3.0]
+fittings = [
+  { name = "Dropouts and inserts", mass = 120.0, at = "rear_axle" },
+  { name = "Bosses, guides and brake mount", mass = 30.0, at = "tubes" },
+  { name = "Bonding, resin and paint", mass = 150.0, at = "tubes" },
+]
+fittings_source = "Estimate for a carbon hardtail; to be checked against weighed frames."

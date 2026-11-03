@@ -6,6 +6,7 @@
 mod geometry;
 mod project;
 mod solved;
+mod tubes;
 mod units;
 
 pub use geometry::{
@@ -13,8 +14,10 @@ pub use geometry::{
 };
 pub use project::{CURRENT_SCHEMA_VERSION, LoadError, Project, WheelSize};
 pub use solved::{
-    Diagnostic, FramePoints, GeometryState, Point, Severity, Solved, SolvedGeometry, ValueSource,
+    Diagnostic, FramePoints, GeometryState, Point, Severity, Solved, SolvedGeometry, SolvedTubes,
+    Tube, TubeFitting, ValueSource,
 };
+pub use tubes::{JunctionOffsets, Material, TubeInputs, TubeKind, TubeSection};
 pub use units::{
     ANGLE_DECIMALS, ANGLE_LABEL, Degrees, LengthUnit, MM_PER_INCH, Millimeters, ParseError,
     TRAVEL_UNIT, commit_angle, commit_length, format_angle, format_length, parse_angle,
