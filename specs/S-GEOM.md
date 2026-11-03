@@ -8,7 +8,7 @@ Turn the geometry the designer pins (head angle, reach, stack and so on) into a 
 
 ## How the geometry fits together
 
-With the wheel sizes and the fork known, a static frame on flat ground has **6 degrees of freedom** in the front and rear, plus the 2 seat angles, and these variables:
+With the wheel sizes and the fork known, a static frame on flat ground has **5 degrees of freedom** in the front and rear, plus the 2 seat angles, and these variables:
 
 | Variable | Notes |
 |---|---|
@@ -17,7 +17,7 @@ With the wheel sizes and the fork known, a static frame on flat ground has **6 d
 | Effective seat angle | Sets the saddle point (G4). Independent of the others. |
 | Actual seat angle | Added for G4; with the saddle point, sets the seat tube axis. Independent of the others. |
 | Chainstay length | Crank axis to rear axle, straight line. |
-| BB drop | Rear axle height above the crank axis. |
+| BB drop | Vertical distance from the midpoint of the line between the axles down to the crank centre (G8). |
 | BB height | Crank axis above the ground. |
 | Wheelbase | Rear axle to front axle, horizontal. |
 | Head tube length | Added to the plan's list (G2). |
@@ -57,17 +57,21 @@ The saddle point, the seat tube axis, trail, front centre, rear centre and fork 
    - Each equation is solved in closed form where its unknown is a length, and with a bracketed 1D root finder where it's an angle.
 4. **Diagnostic codes:** `geometry.unpinned` (Info, as in the mockups), `geometry.default` (Info, per defaulted value), `geometry.conflict` (Error, G6), `geometry.impossible` (Error, G7), `wheel.missing` (Info), `fork.default` (Info, as in the mockups), `pedal.ground` and `pedal.front_tyre` (Warning, G13).
 5. **Chart fixtures:** the five Nicolai charts (G10) in `reference-data/geometry/`, one TOML each with every size, the source web address, date retrieved, fork used and any R7 corrections. Where a chart gives a range or a single-size value (the Nicolai Argon GTB GPI's adjustable chainstay; its head and seat angles listed once), the fixture records which value it uses and why.
-6. **Out of scope:** full-suspension geometry at sag (S-KINEMATICS), tubes and actual seat tube angle (S-TUBES), the fork library (S-COMPONENTS), the specification pane and side view (S-SHELL).
+6. **Out of scope:** full-suspension geometry at sag (S-KINEMATICS), tubes and seat tube length (S-TUBES), the fork library (S-COMPONENTS), the specification pane and side view (S-SHELL).
 
 ## Done when
 
-- For every chart fixture and size, pinning 6 independent chart values, plus the seat angles the chart gives, with the chart's fork reproduces every other chart value within ±3 mm and ±0.3° (R6). Charts that omit a value (the Nicolai G1 has no BB drop) pin wheelbase instead, and the solved BB drop and front centre are checked against the chart where it gives them.
-- Geometry at fork sag matches hand calculations, written out in the test, for a rigid frame and a hardtail.
+- For every chart fixture and size, pinning 5 independent chart values, plus the seat angles the chart gives, with the chart's fork reproduces every other chart value within ±3 mm and ±0.3° (R6), apart from values recorded as known gaps in the chart file (S-REF "Changes after approval"), whose gaps must not move by more than 0.2 mm. Charts that omit a value (the Nicolai G1 has no BB drop) pin wheelbase instead, and the solved BB drop and front centre are checked against the chart where it gives them.
+- Geometry at fork sag matches hand calculations, written out in the test, for a hardtail. A rigid frame has no fork sag, and full suspension has no sag state until S-KINEMATICS.
 - **Round trip:** for every fixture, solving with any valid choice of independent pins and then pinning the solved values in a different valid set reproduces the same frame within 0.01 mm and 0.001°.
 - An empty project, a project with only wheel sizes, and every conflicting or impossible combination in the tests return diagnostics, never a panic. A property test feeds random pins and checks the same.
 - Pedal clearances match hand calculations for a hardtail, static, at fork sag and at full fork travel, and a pedal touching the ground or the tyre raises its warning.
 - Save/load round-trips a project with pinned geometry and fork overrides.
 - CI passes on Linux and macOS.
+
+## Changes after approval
+
+- 2026-11-02: Corrected errors left from drafting: BB drop is defined as in G8, the frame has 5 degrees of freedom, actual seat tube angle is in scope (G4), the sag hand calculation covers hardtails only, and chart values recorded as known gaps are exempt from the ±3 mm check.
 
 ## Open questions
 

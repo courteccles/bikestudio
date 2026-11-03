@@ -31,19 +31,19 @@ wheelbase = 1266.0
 test = "bb_drop_pinned"
 value = "head tube length"
 gap = -18.2
-reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size. The chainstay isn't adjustable, but the seatstay mutator is: a head angle about 0.3 degrees steeper (rear raised) would match, so the wheelbase may come from another mutator setting. The sheet itself disagrees on the mutator (tech sheet 12/15 mm, FAQ 6.5/10 mm), so no correction is made."
 
 [[sizes.known_gaps]]
 test = "bb_drop_pinned"
 value = "wheelbase"
 gap = -6.6
-reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size. The chainstay isn't adjustable, but the seatstay mutator is: a head angle about 0.3 degrees steeper (rear raised) would match, so the wheelbase may come from another mutator setting. The sheet itself disagrees on the mutator (tech sheet 12/15 mm, FAQ 6.5/10 mm), so no correction is made."
 
 [[sizes.known_gaps]]
 test = "head_tube_length_pinned"
 value = "BB drop"
 gap = -16.4
-reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size. The chainstay isn't adjustable, but the seatstay mutator is: a head angle about 0.3 degrees steeper (rear raised) would match, so the wheelbase may come from another mutator setting. The sheet itself disagrees on the mutator (tech sheet 12/15 mm, FAQ 6.5/10 mm), so no correction is made."
 
 [[sizes]]
 size = "S"
@@ -60,13 +60,13 @@ wheelbase = 1283.0
 test = "bb_drop_pinned"
 value = "wheelbase"
 gap = 3.1
-reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size. The chainstay isn't adjustable, but the seatstay mutator is: a head angle about 0.3 degrees steeper (rear raised) would match, so the wheelbase may come from another mutator setting. The sheet itself disagrees on the mutator (tech sheet 12/15 mm, FAQ 6.5/10 mm), so no correction is made."
 
 [[sizes.known_gaps]]
 test = "head_tube_length_pinned"
 value = "wheelbase"
 gap = 3.6
-reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size. The chainstay isn't adjustable, but the seatstay mutator is: a head angle about 0.3 degrees steeper (rear raised) would match, so the wheelbase may come from another mutator setting. The sheet itself disagrees on the mutator (tech sheet 12/15 mm, FAQ 6.5/10 mm), so no correction is made."
 
 [[sizes]]
 size = "M"
@@ -83,13 +83,13 @@ wheelbase = 1307.0
 test = "bb_drop_pinned"
 value = "wheelbase"
 gap = 3.4
-reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size. The chainstay isn't adjustable, but the seatstay mutator is: a head angle about 0.3 degrees steeper (rear raised) would match, so the wheelbase may come from another mutator setting. The sheet itself disagrees on the mutator (tech sheet 12/15 mm, FAQ 6.5/10 mm), so no correction is made."
 
 [[sizes.known_gaps]]
 test = "head_tube_length_pinned"
 value = "wheelbase"
 gap = 3.9
-reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size. The chainstay isn't adjustable, but the seatstay mutator is: a head angle about 0.3 degrees steeper (rear raised) would match, so the wheelbase may come from another mutator setting. The sheet itself disagrees on the mutator (tech sheet 12/15 mm, FAQ 6.5/10 mm), so no correction is made."
 
 [[sizes]]
 size = "L"
@@ -106,7 +106,7 @@ wheelbase = 1332.0
 test = "head_tube_length_pinned"
 value = "wheelbase"
 gap = 3.2
-reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size. The chainstay isn't adjustable, but the seatstay mutator is: a head angle about 0.3 degrees steeper (rear raised) would match, so the wheelbase may come from another mutator setting. The sheet itself disagrees on the mutator (tech sheet 12/15 mm, FAQ 6.5/10 mm), so no correction is made."
 
 [[sizes]]
 size = "XL"
@@ -123,13 +123,13 @@ wheelbase = 1355.0
 test = "bb_drop_pinned"
 value = "wheelbase"
 gap = 4.0
-reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size. The chainstay isn't adjustable, but the seatstay mutator is: a head angle about 0.3 degrees steeper (rear raised) would match, so the wheelbase may come from another mutator setting. The sheet itself disagrees on the mutator (tech sheet 12/15 mm, FAQ 6.5/10 mm), so no correction is made."
 
 [[sizes.known_gaps]]
 test = "head_tube_length_pinned"
 value = "wheelbase"
 gap = 4.5
-reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size. The chainstay isn't adjustable, but the seatstay mutator is: a head angle about 0.3 degrees steeper (rear raised) would match, so the wheelbase may come from another mutator setting. The sheet itself disagrees on the mutator (tech sheet 12/15 mm, FAQ 6.5/10 mm), so no correction is made."
 
 [[sizes]]
 size = "XXL"
@@ -146,10 +146,10 @@ wheelbase = 1380.0
 test = "bb_drop_pinned"
 value = "wheelbase"
 gap = 3.8
-reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size. The chainstay isn't adjustable, but the seatstay mutator is: a head angle about 0.3 degrees steeper (rear raised) would match, so the wheelbase may come from another mutator setting. The sheet itself disagrees on the mutator (tech sheet 12/15 mm, FAQ 6.5/10 mm), so no correction is made."
 
 [[sizes.known_gaps]]
 test = "head_tube_length_pinned"
 value = "wheelbase"
 gap = 3.8
-reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size. The chainstay isn't adjustable, but the seatstay mutator is: a head angle about 0.3 degrees steeper (rear raised) would match, so the wheelbase may come from another mutator setting. The sheet itself disagrees on the mutator (tech sheet 12/15 mm, FAQ 6.5/10 mm), so no correction is made."
