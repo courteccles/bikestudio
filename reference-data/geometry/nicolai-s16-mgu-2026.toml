@@ -1,0 +1,155 @@
+name = "Nicolai S16 MGU 2026"
+frame = "full_suspension"
+source = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2C1_eTP3PDBXn0UV9OUtqZF2BEffe7bhJNaHExLjT2yqxOEQULQXziIe150yc1vUAIXL5pIojdHjg/pubhtml (tab TECH SHEET S16 MGU)"
+retrieved = "2026-11-02"
+front_tyre_diameter = 745.0
+rear_tyre_diameter = 745.0
+fork_axle_to_crown = 573.7
+fork_offset = 44.0
+lower_headset_stack = 3.0
+front_travel = 160.0
+rear_travel = 160.0
+notes = [
+  "Full-suspension e-bike with the Pinion MGU motor gearbox.",
+  "Size XS is a mullet (27.5 x 2.4 rear, 715 mm) with a 10 mm BB drop; S to XXL are 29\" with no BB drop.",
+  "Head angle (64.5), effective seat angle (77.5) and chainstay (459) are listed once for every size.",
+]
+
+[[sizes]]
+size = "XS"
+rear_tyre_diameter = 715.0
+bottom_bracket_drop = 10.0
+stack = 629.0
+reach = 460.0
+head_tube_angle = 64.5
+effective_seat_tube_angle = 77.5
+head_tube_length = 140.0
+chainstay_length = 459.0
+wheelbase = 1266.0
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "head tube length"
+gap = -18.2
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "wheelbase"
+gap = -6.6
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "BB drop"
+gap = -16.4
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+
+[[sizes]]
+size = "S"
+bottom_bracket_drop = 0.0
+stack = 636.0
+reach = 475.0
+head_tube_angle = 64.5
+effective_seat_tube_angle = 77.5
+head_tube_length = 150.0
+chainstay_length = 459.0
+wheelbase = 1283.0
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "wheelbase"
+gap = 3.1
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = 3.6
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+
+[[sizes]]
+size = "M"
+bottom_bracket_drop = 0.0
+stack = 645.0
+reach = 495.0
+head_tube_angle = 64.5
+effective_seat_tube_angle = 77.5
+head_tube_length = 160.0
+chainstay_length = 459.0
+wheelbase = 1307.0
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "wheelbase"
+gap = 3.4
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = 3.9
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+
+[[sizes]]
+size = "L"
+bottom_bracket_drop = 0.0
+stack = 654.0
+reach = 515.0
+head_tube_angle = 64.5
+effective_seat_tube_angle = 77.5
+head_tube_length = 170.0
+chainstay_length = 459.0
+wheelbase = 1332.0
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = 3.2
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+
+[[sizes]]
+size = "XL"
+bottom_bracket_drop = 0.0
+stack = 663.0
+reach = 535.0
+head_tube_angle = 64.5
+effective_seat_tube_angle = 77.5
+head_tube_length = 180.0
+chainstay_length = 459.0
+wheelbase = 1355.0
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "wheelbase"
+gap = 4.0
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = 4.5
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+
+[[sizes]]
+size = "XXL"
+bottom_bracket_drop = 0.0
+stack = 673.0
+reach = 555.0
+head_tube_angle = 64.5
+effective_seat_tube_angle = 77.5
+head_tube_length = 190.0
+chainstay_length = 459.0
+wheelbase = 1380.0
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "wheelbase"
+gap = 3.8
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = 3.8
+reason = "The chart's wheelbase is 3-5 mm shorter than its own stack, reach, head angle, chainstay and fork give, in every size."

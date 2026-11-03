@@ -1,12 +1,32 @@
-use bike_model::{CURRENT_SCHEMA_VERSION, LoadError, Millimeters, Project, WheelSize};
+use bike_model::{
+    CURRENT_SCHEMA_VERSION, CrankSetup, ForkOverrides, GeometryInputs, GeometryVariable, LoadError,
+    Millimeters, PedalSize, Project, WheelSize,
+};
 
 fn filled() -> Project {
+    let mut geometry = GeometryInputs::default();
+    geometry.pin(GeometryVariable::HeadTubeAngle, 64.0);
+    geometry.pin(GeometryVariable::Reach, 480.0);
+    geometry.pin(GeometryVariable::Stack, 630.0);
+    geometry.pin(GeometryVariable::EffectiveSeatTubeAngle, 77.0);
     Project {
         schema_version: CURRENT_SCHEMA_VERSION,
         front_wheel: Some(WheelSize("29".into())),
         rear_wheel: Some(WheelSize("27.5".into())),
         front_travel: Some(Millimeters(170.0)),
         rear_travel: Some(Millimeters(160.0)),
+        geometry,
+        fork: ForkOverrides {
+            axle_to_crown: Some(Millimeters(582.0)),
+            offset: Some(Millimeters(44.0)),
+        },
+        crank: CrankSetup {
+            crank_length: Some(Millimeters(165.0)),
+            pedal: Some(PedalSize {
+                length: Millimeters(105.0),
+                thickness: Millimeters(17.5),
+            }),
+        },
     }
 }
 

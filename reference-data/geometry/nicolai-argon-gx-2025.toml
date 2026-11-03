@@ -1,0 +1,99 @@
+name = "Nicolai Argon GX 2025"
+frame = "rigid"
+source = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSVYDe_Ey2q9NLo3ysN8mCjV2ukWt6Dw796MZg5jpJ3-h__XPNo7kkoA-eVHGkhrpCRz6pLb8jezmlN/pubhtml (tab ARGON GX - 2025)"
+retrieved = "2026-11-02"
+front_tyre_diameter = 705.0
+rear_tyre_diameter = 705.0
+fork_axle_to_crown = 395.0
+fork_offset = 47.0
+lower_headset_stack = 3.0
+notes = [
+  "Fork: MOQUAI Gravel carbon, rigid. Axle-to-crown is the chart's fork reference measurement.",
+  "Lower headset stack is 3 mm for XS to XL and 13 mm for XXL; XXL overrides it.",
+  "The chart's seat angle doesn't say whether it's effective or actual, so it isn't pinned.",
+]
+
+[[sizes]]
+size = "XS"
+stack = 548.0
+reach = 371.0
+head_tube_angle = 70.5
+head_tube_length = 120.0
+chainstay_length = 430.0
+bottom_bracket_drop = 75.0
+wheelbase = 1012.0
+
+[[sizes]]
+size = "S"
+stack = 559.0
+reach = 380.0
+head_tube_angle = 70.5
+head_tube_length = 130.0
+chainstay_length = 430.0
+bottom_bracket_drop = 75.0
+wheelbase = 1019.0
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "wheelbase"
+gap = 5.7
+reason = "The wheelbase doesn't follow from the chart's other values; sizes M and XL match within 1 mm with the same formulas."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = 4.6
+reason = "The wheelbase doesn't follow from the chart's other values; sizes M and XL match within 1 mm with the same formulas."
+
+[[sizes]]
+size = "M"
+stack = 575.0
+reach = 390.0
+head_tube_angle = 71.0
+head_tube_length = 150.0
+chainstay_length = 430.0
+bottom_bracket_drop = 72.5
+wheelbase = 1036.0
+
+[[sizes]]
+size = "L"
+stack = 596.0
+reach = 403.0
+head_tube_angle = 71.0
+head_tube_length = 170.0
+chainstay_length = 430.0
+bottom_bracket_drop = 72.5
+wheelbase = 1052.0
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "wheelbase"
+gap = 4.8
+reason = "The wheelbase doesn't follow from the chart's other values; sizes M and XL match within 1 mm with the same formulas."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = 3.9
+reason = "The wheelbase doesn't follow from the chart's other values; sizes M and XL match within 1 mm with the same formulas."
+
+[[sizes]]
+size = "XL"
+stack = 606.0
+reach = 410.0
+head_tube_angle = 71.5
+head_tube_length = 180.0
+chainstay_length = 430.0
+bottom_bracket_drop = 72.5
+wheelbase = 1062.0
+
+[[sizes]]
+size = "XXL"
+stack = 625.0
+reach = 424.0
+head_tube_angle = 71.5
+head_tube_length = 190.0
+chainstay_length = 430.0
+bottom_bracket_drop = 72.5
+wheelbase = 1082.0
+lower_headset_stack = 13.0

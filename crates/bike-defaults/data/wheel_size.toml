@@ -1,0 +1,22 @@
+# Wheel sizes: outer diameter of the wheel with its most common tyre (D19, D23).
+# Keys match `WheelSize` in a project, for example "29".
+
+[sizes."20"]
+diameter = 520.0
+source = "Estimated: ISO 5775 bead seat diameter 406 mm plus a 2.4\" tyre (about 57 mm section height each side)."
+
+[sizes."26"]
+diameter = 675.0
+source = "Estimated: ISO 5775 bead seat diameter 559 mm plus a 2.35\" tyre (about 58 mm section height each side)."
+
+[sizes."27.5"]
+diameter = 715.0
+source = "Nicolai S16 MGU 2026 tech sheet: tyre diameter 715 mm (27.5 x 2.4)."
+
+[sizes."29"]
+diameter = 745.0
+source = "Nicolai S16 MGU 2026 tech sheet: tyre diameter 745 mm (29 x 2.4)."
+
+[sizes."32"]
+diameter = 805.0
+source = "Estimated: ISO 5775 bead seat diameter 686 mm plus a 2.4\" tyre (about 60 mm section height each side)."

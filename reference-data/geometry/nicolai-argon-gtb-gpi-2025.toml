@@ -1,0 +1,175 @@
+name = "Nicolai Argon GTB GPI 2025"
+frame = "hardtail"
+source = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSQ1jfMOQd3rg-QTvBJdyrnjf22AoMxdw8XiEKRRpG7m1WbYGWWdhjjQOPiZQAMD4C3ywVWRGoPCZ5N/pubhtml (tab ARGON GTB GPI - 2025)"
+retrieved = "2026-11-02"
+front_tyre_diameter = 745.0
+rear_tyre_diameter = 745.0
+fork_axle_to_crown = 526.0
+fork_offset = 44.0
+lower_headset_stack = 3.0
+front_travel = 120.0
+notes = [
+  "Pinion gearbox hardtail, 100-130 mm fork. Axle-to-crown is the chart's fork reference measurement.",
+  "The chart gives tyre sizes as 27.5\" (size S) and 29\" without diameters; bikestudio's wheel_size.toml diameters (715 mm, 745 mm) are used.",
+  "The chainstay is adjustable (S 440-465 mm, others 448-473 mm); the shortest setting is used.",
+  "Head angle (67.5) and seat angle (74.5, labelled 'real', so actual) are listed once for every size.",
+]
+
+[[sizes]]
+size = "S"
+front_tyre_diameter = 715.0
+rear_tyre_diameter = 715.0
+stack = 623.0
+reach = 435.0
+head_tube_angle = 67.5
+actual_seat_tube_angle = 74.5
+head_tube_length = 110.0
+chainstay_length = 440.0
+bottom_bracket_drop = 42.0
+wheelbase = 1162.0
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "head tube length"
+gap = 8.1
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = -4.6
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "BB drop"
+gap = 7.5
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes]]
+size = "M"
+stack = 630.0
+reach = 455.0
+head_tube_angle = 67.5
+actual_seat_tube_angle = 74.5
+head_tube_length = 120.0
+chainstay_length = 448.0
+bottom_bracket_drop = 57.0
+wheelbase = 1185.0
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "head tube length"
+gap = -10.6
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = 4.5
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "BB drop"
+gap = -9.8
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes]]
+size = "L"
+stack = 630.0
+reach = 475.0
+head_tube_angle = 67.5
+actual_seat_tube_angle = 74.5
+head_tube_length = 120.0
+chainstay_length = 448.0
+bottom_bracket_drop = 57.0
+wheelbase = 1210.0
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "head tube length"
+gap = -10.6
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "wheelbase"
+gap = -5.7
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "BB drop"
+gap = -9.8
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes]]
+size = "XL"
+stack = 640.0
+reach = 495.0
+head_tube_angle = 67.5
+actual_seat_tube_angle = 74.5
+head_tube_length = 130.0
+chainstay_length = 448.0
+bottom_bracket_drop = 57.0
+wheelbase = 1240.0
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "head tube length"
+gap = -9.7
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "wheelbase"
+gap = -11.5
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = -6.7
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "BB drop"
+gap = -9.0
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes]]
+size = "XXL"
+stack = 660.0
+reach = 515.0
+head_tube_angle = 67.5
+actual_seat_tube_angle = 74.5
+head_tube_length = 150.0
+chainstay_length = 448.0
+bottom_bracket_drop = 57.0
+wheelbase = 1275.0
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "head tube length"
+gap = -8.1
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes.known_gaps]]
+test = "bb_drop_pinned"
+value = "wheelbase"
+gap = -18.2
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = -14.3
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "BB drop"
+gap = -7.5
+reason = "The chart's head tube length, BB drop and wheelbase don't agree with its own stack, reach, head angle and fork. M and L list the same head tube and BB drop but different stack and reach."

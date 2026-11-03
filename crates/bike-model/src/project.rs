@@ -4,6 +4,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+use crate::geometry::{CrankSetup, ForkOverrides, GeometryInputs};
 use crate::units::Millimeters;
 
 /// The schema version this build reads and writes.
@@ -30,6 +31,15 @@ pub struct Project {
     pub front_travel: Option<Millimeters>,
     /// `None` means a rigid rear.
     pub rear_travel: Option<Millimeters>,
+    /// Pinned geometry; anything not pinned is free (S-GEOM).
+    #[serde(default)]
+    pub geometry: GeometryInputs,
+    /// Fork dimensions overriding the defaults (S-GEOM G3).
+    #[serde(default)]
+    pub fork: ForkOverrides,
+    /// Crank and pedal for clearance (S-GEOM G13).
+    #[serde(default)]
+    pub crank: CrankSetup,
 }
 
 impl Default for Project {
@@ -40,6 +50,9 @@ impl Default for Project {
             rear_wheel: None,
             front_travel: None,
             rear_travel: None,
+            geometry: GeometryInputs::default(),
+            fork: ForkOverrides::default(),
+            crank: CrankSetup::default(),
         }
     }
 }

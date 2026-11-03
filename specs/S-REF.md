@@ -41,6 +41,7 @@ Provide known answers that prove bikestudio's geometry and linkage results are a
 ## Changes after approval
 
 - 2026-11-02: R1 and deliverable 4 name the Nicolai charts and move gathering them to S-GEOM, the first spec to use them. The reference calculator and linkage fixtures move to S-KINEMATICS for the same reason (S-GEOM G10).
+- 2026-11-02: R7 changes for geometry charts. Chart values that disagree with the chart's own other values are not corrected, because the only proof a value is wrong is the solver's own maths, which would make a correction circular. Instead each one is listed in its size's `known_gaps` with the gap (solved minus chart) and the reason. The tests skip these values when checking the ±3 mm tolerance (R6, unchanged), but fail if a recorded gap moves by more than 0.2 mm, so a solver change is still caught.
 
 ## Open questions
 

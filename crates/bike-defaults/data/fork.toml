@@ -1,0 +1,38 @@
+# Default fork dimensions by front wheel size (S-GEOM G3).
+# Axle-to-crown for a suspension fork = at_zero_travel + per_mm_travel x travel.
+# A rigid fork (0 mm travel) uses rigid_axle_to_crown.
+
+[forks."29"]
+rigid_axle_to_crown = 470.0
+at_zero_travel = 390.0
+per_mm_travel = 1.13
+offset = 44.0
+source = "Suspension: linear fit to Nicolai tech sheets (Argon GTB GPI 526 mm, S16 MGU 573.7 mm at 160 mm, G1 582 mm at 170 mm); offset 44 mm from the same sheets. Rigid: estimated, suspension-corrected for about 100 mm."
+
+[forks."27.5"]
+rigid_axle_to_crown = 455.0
+at_zero_travel = 371.0
+per_mm_travel = 1.13
+offset = 44.0
+source = "Estimated: the 29\" fit shortened by 19 mm for the smaller wheel; offset as the Nicolai sheets."
+
+[forks."26"]
+rigid_axle_to_crown = 440.0
+at_zero_travel = 355.0
+per_mm_travel = 1.13
+offset = 40.0
+source = "Estimated: the 29\" fit shortened for the smaller wheel."
+
+[forks."32"]
+rigid_axle_to_crown = 500.0
+at_zero_travel = 420.0
+per_mm_travel = 1.13
+offset = 50.0
+source = "Estimated: the 29\" fit lengthened for the larger wheel."
+
+[forks."20"]
+rigid_axle_to_crown = 370.0
+at_zero_travel = 300.0
+per_mm_travel = 1.13
+offset = 35.0
+source = "Estimated: the 29\" fit shortened for the smaller wheel."

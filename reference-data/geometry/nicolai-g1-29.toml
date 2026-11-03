@@ -1,0 +1,114 @@
+name = "Nicolai G1 29\""
+frame = "full_suspension"
+source = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQNKldz_0iVoM5d0lhAkD4EWRDZw8XSwgGz0AJOl9HQfAX317oJy77NJXGWP_3JabsGd6xQQatPCaMA/pubhtml (tab Factory Setup 29\")"
+retrieved = "2026-11-02"
+front_tyre_diameter = 740.0
+rear_tyre_diameter = 740.0
+fork_axle_to_crown = 582.0
+fork_offset = 44.0
+lower_headset_stack = 4.0
+front_travel = 170.0
+rear_travel = 162.0
+notes = [
+  "Fork axle-to-crown 582 mm at 170 mm travel, from the chart.",
+  "The chart gives the lower headset stack as 3-5 mm; the middle, 4 mm, is used.",
+  "The chart gives no BB drop; the tests pin head tube length and check wheelbase and front centre.",
+  "Head angle is the chart's 'factory setup' value (the mutators change it).",
+]
+
+[[sizes]]
+size = "S"
+stack = 628.0
+reach = 455.0
+head_tube_angle = 63.7
+effective_seat_tube_angle = 79.0
+head_tube_length = 120.0
+chainstay_length = 446.0
+wheelbase = 1260.0
+front_centre = 814.0
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = -7.0
+reason = "The chart's wheelbase and front centre don't follow from its own reach, stack, head angle, head tube and fork. The head angle is the 'factory setup' value, so they may come from a different mutator setting. See reports/S-GEOM-chart-check.md."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "front centre"
+gap = -6.7
+reason = "The chart's wheelbase and front centre don't follow from its own reach, stack, head angle, head tube and fork. The head angle is the 'factory setup' value, so they may come from a different mutator setting. See reports/S-GEOM-chart-check.md."
+
+[[sizes]]
+size = "M"
+stack = 646.0
+reach = 478.0
+head_tube_angle = 63.2
+effective_seat_tube_angle = 78.5
+head_tube_length = 140.0
+chainstay_length = 454.0
+wheelbase = 1299.0
+front_centre = 844.0
+
+[[sizes]]
+size = "L"
+stack = 657.0
+reach = 500.0
+head_tube_angle = 63.0
+effective_seat_tube_angle = 78.3
+head_tube_length = 150.0
+chainstay_length = 460.0
+wheelbase = 1325.0
+front_centre = 865.0
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = 7.9
+reason = "The chart's wheelbase and front centre don't follow from its own reach, stack, head angle, head tube and fork. The head angle is the 'factory setup' value, so they may come from a different mutator setting. See reports/S-GEOM-chart-check.md."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "front centre"
+gap = 8.3
+reason = "The chart's wheelbase and front centre don't follow from its own reach, stack, head angle, head tube and fork. The head angle is the 'factory setup' value, so they may come from a different mutator setting. See reports/S-GEOM-chart-check.md."
+
+[[sizes]]
+size = "XL"
+stack = 678.0
+reach = 515.0
+head_tube_angle = 63.2
+effective_seat_tube_angle = 78.5
+head_tube_length = 160.0
+chainstay_length = 474.0
+wheelbase = 1359.0
+front_centre = 888.0
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = 4.5
+reason = "The chart's wheelbase and front centre don't follow from its own reach, stack, head angle, head tube and fork. The head angle is the 'factory setup' value, so they may come from a different mutator setting. See reports/S-GEOM-chart-check.md."
+
+[[sizes]]
+size = "XXL"
+stack = 685.0
+reach = 535.0
+head_tube_angle = 63.1
+effective_seat_tube_angle = 78.3
+head_tube_length = 170.0
+chainstay_length = 481.0
+wheelbase = 1387.0
+front_centre = 910.0
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "wheelbase"
+gap = 9.3
+reason = "The chart's wheelbase and front centre don't follow from its own reach, stack, head angle, head tube and fork. The head angle is the 'factory setup' value, so they may come from a different mutator setting. See reports/S-GEOM-chart-check.md."
+
+[[sizes.known_gaps]]
+test = "head_tube_length_pinned"
+value = "front centre"
+gap = 6.3
+reason = "The chart's wheelbase and front centre don't follow from its own reach, stack, head angle, head tube and fork. The head angle is the 'factory setup' value, so they may come from a different mutator setting. See reports/S-GEOM-chart-check.md."

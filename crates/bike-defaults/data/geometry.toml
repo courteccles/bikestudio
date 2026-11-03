@@ -1,0 +1,85 @@
+# Starting geometry for the default solve (S-GEOM G11, G12).
+# A bike row applies to the listed wheel sizes and front travel up to max_front_travel.
+# Wheelbase, BB height and head tube length are usually solved; their values here are
+# only starting guesses for the solver.
+
+default_wheel = "29"
+
+[pedal]
+length = 100.0
+thickness = 20.0
+source = "Owner's choice, S-GEOM G13."
+
+[cranks]
+small = 165.0
+medium = 170.0
+large = 175.0
+source = "Owner's choice, S-GEOM G13: crank length follows rider size."
+
+[[bikes]]
+name = "Rigid"
+wheels = ["20", "26", "27.5", "29", "32"]
+max_front_travel = 0.0
+head_tube_angle = 68.0
+effective_seat_tube_angle = 75.0
+actual_seat_tube_angle = 74.0
+stack = 620.0
+reach = 450.0
+head_tube_length = 115.0
+chainstay_length = 440.0
+bottom_bracket_drop = 60.0
+bottom_bracket_height = 310.0
+wheelbase = 1130.0
+fork_sag = 0.0
+source = "Estimated from the Nicolai Argon GTB GPI 2025 size M, steepened for a rigid fork."
+
+[[bikes]]
+name = "Short travel"
+wheels = ["20", "26", "27.5", "29", "32"]
+max_front_travel = 130.0
+head_tube_angle = 67.0
+effective_seat_tube_angle = 76.0
+actual_seat_tube_angle = 74.5
+stack = 630.0
+reach = 455.0
+head_tube_length = 120.0
+chainstay_length = 448.0
+bottom_bracket_drop = 55.0
+bottom_bracket_height = 320.0
+wheelbase = 1185.0
+fork_sag = 0.2
+source = "Nicolai Argon GTB GPI 2025 size M, rounded; effective seat angle estimated."
+
+[[bikes]]
+name = "Trail"
+wheels = ["20", "26", "27.5", "29", "32"]
+max_front_travel = 160.0
+head_tube_angle = 65.0
+effective_seat_tube_angle = 77.0
+actual_seat_tube_angle = 74.0
+stack = 640.0
+reach = 480.0
+head_tube_length = 130.0
+chainstay_length = 450.0
+bottom_bracket_drop = 25.0
+bottom_bracket_height = 345.0
+wheelbase = 1260.0
+fork_sag = 0.2
+source = "Between the Nicolai S16 MGU 2026 and G1 size M, rounded; actual seat angle estimated."
+
+[[bikes]]
+name = "Enduro"
+wheels = ["20", "26", "27.5", "29", "32"]
+max_front_travel = 1000.0
+head_tube_angle = 63.5
+effective_seat_tube_angle = 78.5
+actual_seat_tube_angle = 74.0
+stack = 646.0
+reach = 478.0
+head_tube_length = 144.0
+chainstay_length = 454.0
+bottom_bracket_drop = 18.0
+bottom_bracket_height = 352.0
+wheelbase = 1299.0
+fork_sag = 0.2
+source = "Nicolai G1 29\" size M (head tube includes the lower headset stack); actual seat angle estimated."
