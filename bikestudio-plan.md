@@ -313,7 +313,7 @@ Optimizer / heavy sweeps ──▶ worker thread ──channel──▶ user int
 ```
 
 - The user interface emits `Command` enums: `SetParameter`, `MovePivot`, `PickComponent`, and so on. The linkage editor's commands are listed in section 5.
-- The reducer applies a command and pushes the previous state onto the undo stack, so undo/redo comes for free.
+- The reducer applies a command and, for linkage edits, pushes the previous state onto the undo stack, so undo/redo comes for free. Undo and redo arrive with S-LINK-EDITOR. Changing components (`PickComponent`) isn't an undo step.
 - Recomputation runs only when the model's generation counter changes.
 - **New projects** open empty (`Project::default()`); there is no wizard.
 - **Performance budget:** a pivot drag updates the side view, every curve and the feel panel within 4 milliseconds. Enforce this with a `criterion` benchmark in continuous integration.
@@ -509,10 +509,10 @@ Version 1 is built as small, separately testable specs, in this order. Each spec
 | 4 | S-GEOM | Pinned/free geometry solver and constraint diagnostics | S-REF geometry charts reproduce within ±3 mm and ±0.3° (R6) |
 | 5 | S-TUBES | Naive tubes: centerlines, generic diameter and wall thickness, mass estimate | Every frame type yields tube centerlines and a mass estimate |
 | 6 | S-COMPONENTS | Component data and templates: forks, shocks, drive units, batteries | Every library entry parses, cites a source and renders |
-| 7 | S-SHELL | Studio shell, side view, undo and redo; new projects open empty | Every edit redraws within the frame budget |
+| 7 | S-SHELL | Studio shell, side view; new projects open empty | A project opens, edits redraw the side view, and it saves and loads |
 | 8 | S-EXPORT | PDF and SVG drawing, DXF sketch, CSV named-values table. Rigid and hardtail first; pivots once S-LINK exists | A rigid frame and a hardtail export and open correctly in CAD |
 | 9 | S-LINK | Anchor, link and pin graph; analytic four-bar solver with Newton-Raphson fallback | Single-pivot, Horst and split-pivot layouts solve; invalid ones report diagnostics |
-| 10 | S-LINK-EDITOR | Palette, snapping, edit pane, templates, pivot placement, dimension callouts and filter, outlines | Dragging a pivot updates every curve live |
+| 10 | S-LINK-EDITOR | Palette, snapping, edit pane, templates, pivot placement, dimension callouts and filter, outlines, undo and redo | Dragging a pivot updates every curve live |
 | 11 | S-KINEMATICS | Sag, travel sweep, axle path, leverage ratio, chain growth, pedal kickback | Curves match the S-REF reference calculator answers |
 | 12 | S-CLEARANCE | 2D tire envelope against the front triangle and drive unit outline | Contacts are highlighted at the travel where they occur |
 | 13 | S-MASS | Rider model, ascending and descending positions, combined center of mass, weight distribution, inertia | A rider with no measurements gets a complete result from defaults |

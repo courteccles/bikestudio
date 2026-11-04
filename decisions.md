@@ -55,10 +55,10 @@ Build order. Each spec depends only on specs above it.
 | 4 | S-GEOM | Pinned/free geometry solver and constraint diagnostics | D3 |
 | 5 | S-TUBES | Naive tubes: centerlines, generic diameter and wall, mass estimate | D6 |
 | 6 | S-COMPONENTS | Component data and templates: forks, shocks, drive units, batteries | D10, D19 |
-| 7 | S-SHELL | Studio shell, side view, undo and redo | D20 |
+| 7 | S-SHELL | Studio shell, side view | D20 |
 | 8 | S-EXPORT | PDF and SVG drawing, DXF sketch, named-values table. Rigid and hardtail first; pivots once S-LINK exists | D4, D8, D21 |
 | 9 | S-LINK | Linkage graph, analytic four-bar solver, Newton fallback | D9, D22 |
-| 10 | S-LINK-EDITOR | Palette, snapping, edit pane, templates, pivot placement, callouts | D3 |
+| 10 | S-LINK-EDITOR | Palette, snapping, edit pane, templates, pivot placement, callouts, undo and redo | D3 |
 | 11 | S-KINEMATICS | Sag, travel sweep, axle path, leverage ratio, chain growth, pedal kickback | D11 |
 | 12 | S-CLEARANCE | 2D tire envelope (wheel-size diameter) against front triangle and drive unit | D23 |
 | 13 | S-MASS | Rider model, ascending and descending positions, center of mass, inertia | D11 |
