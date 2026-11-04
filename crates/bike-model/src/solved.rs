@@ -2,6 +2,8 @@
 
 use std::collections::BTreeMap;
 
+use serde::{Deserialize, Serialize};
+
 use crate::geometry::GeometryVariable;
 use crate::tubes::{Material, TubeKind};
 
@@ -34,7 +36,8 @@ impl Diagnostic {
 
 /// A 2D point in millimetres: origin at the crank centre, +X toward the
 /// front wheel, +Y up, X along the ground.
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Point {
     pub x: f64,
     pub y: f64,

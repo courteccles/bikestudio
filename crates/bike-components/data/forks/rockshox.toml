@@ -1,0 +1,35 @@
+# RockShox forks (S-COMPONENTS C4). One entry per model and year; each
+# variant is a wheel size x travel x offset. Lengths in mm, mass in grams.
+make = "RockShox"
+
+[[models]]
+model = "Lyrik Ultimate"
+year = 2025
+steerer = { kind = "tapered", top = 1.125, bottom = 1.5 }
+stanchion_diameter = 35.0
+source = "SRAM, 2025 Front Suspension Specifications (https://www.sram.com/globalassets/document-hierarchy/service-manuals/rockshox/front-suspension/2025-front-suspension-specifications.pdf), page 16: FS-LYRK-ULT-D2, 35 mm upper tube, 1.5 tapered steerer, 29 B* 15 x 110, 44 mm offset; axle-to-crown 551/561/571 mm at 140/150/160 mm. Retrieved 2026-11-03."
+
+[[models.variants]]
+variant = "29-160-44"
+wheel = "29"
+travel = 160.0
+axle_to_crown = 571.0
+offset = 44.0
+mass = { mass = 2028.0 }
+mass_source = "SRAM model page FS-LYRK-ULT-D2 (https://www.sram.com/en/rockshox/models/fs-lyrk-ult-d2): 2028 g, based on 29\" Maxle Stealth 160 mm travel 1.5\" taper steerer, with ButterCups. Centre of mass not published: drawing centroid. Retrieved 2026-11-03."
+
+[[models]]
+model = "SID SL Select"
+year = 2025
+steerer = { kind = "tapered", top = 1.125, bottom = 1.5 }
+stanchion_diameter = 32.0
+source = "SRAM, 2025 Front Suspension Specifications (https://www.sram.com/globalassets/document-hierarchy/service-manuals/rockshox/front-suspension/2025-front-suspension-specifications.pdf), page 23: SID SL (FS-SIDS-SEL2-D1 and others), 32 mm upper tube, 1.5 tapered steerer, 29 B* 15 x 110, 44 mm offset; axle-to-crown 506/516 mm at 100/110 mm. Retrieved 2026-11-03."
+
+[[models.variants]]
+variant = "29-110-44"
+wheel = "29"
+travel = 110.0
+axle_to_crown = 516.0
+offset = 44.0
+mass = { mass = 1468.0 }
+mass_source = "Manufacturer-claimed 1468 g (29\", with Maxle Stealth) as quoted by Sigma Sports (https://sigmasports.com/item/RockShox/Sid-SL-Select-29-15x110mm-Suspension-Fork/TB9C); SRAM's model page gives no weight. Travel of the weighed fork not stated. Centre of mass not published: drawing centroid. Retrieved 2026-11-03."

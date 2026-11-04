@@ -1,13 +1,17 @@
 //! S-GEOM "Done when": the Nicolai charts reproduce within ±3 mm and ±0.3° (S-REF R6).
 //! S-TUBES T7: the charts' seat tube length and overhang place the tubes.
+//! S-COMPONENTS: the Pinion charts solve with a drive unit and a library fork.
 
 use std::path::PathBuf;
 
+use bike_components::{Library, resolve};
 use bike_defaults::{Defaults, WheelSizeEntry};
-use bike_geometry::{solve_geometry, solve_tubes};
+use bike_geometry::{solve_geometry, solve_geometry_with, solve_tubes, solve_tubes_with};
 use bike_model::{
-    ForkOverrides, GeometryVariable as V, Material, Millimeters, Parameter, Project, Severity,
-    SolvedGeometry, TubeKind, WheelSize,
+    ComponentId, ComponentName, ComponentReference, Degrees, DriveUnit, DriveUnitComponent,
+    DriveUnitKind, ForkOverrides, GeometryVariable as V, MassProperties, Material, Millimeters,
+    Mount, OutlineAccuracy, Parameter, Point, Project, Severity, SolvedGeometry, TubeKind,
+    WheelSize,
 };
 use serde::Deserialize;
 
@@ -414,6 +418,164 @@ fn chart_frame_weights_are_reported() {
                 size.size,
                 (estimate / weight - 1.0) * 100.0
             );
+        }
+    }
+}
+
+/// A made-up drive unit for the tests only: not Pinion's dimensions, which
+/// aren't published (S-COMPONENTS C10). Roughly gearbox-sized around the crank.
+fn synthetic_unit(kind: DriveUnitKind) -> DriveUnitComponent {
+    DriveUnitComponent {
+        name: ComponentName {
+            make: "Test".into(),
+            model: "Synthetic unit".into(),
+            year: 2026,
+            variant: "not-real-data".into(),
+        },
+        kind,
+        motor: None,
+        mounts: vec![
+            Mount {
+                position: Point::new(70.0, 40.0),
+                diameter: Millimeters(8.0),
+            },
+            Mount {
+                position: Point::new(-60.0, -50.0),
+                diameter: Millimeters(8.0),
+            },
+        ],
+        outline: vec![
+            Point::new(-90.0, -70.0),
+            Point::new(100.0, -70.0),
+            Point::new(115.0, 30.0),
+            Point::new(80.0, 75.0),
+            Point::new(-90.0, 60.0),
+        ],
+        outline_accuracy: OutlineAccuracy::Exact,
+        output_sprocket: None,
+        ratios: None,
+        mass: MassProperties {
+            mass: 2700.0,
+            centre_of_mass: None,
+        },
+        frame_mount_mass: 120.0,
+        svg_path: None,
+        source: "Synthetic test data, not a real unit.".into(),
+    }
+}
+
+fn pinion_charts() -> Vec<Chart> {
+    let charts: Vec<Chart> = charts()
+        .into_iter()
+        .filter(|c| c.name.contains("Argon GTB GPI") || c.name.contains("S16 MGU"))
+        .collect();
+    assert_eq!(charts.len(), 2);
+    charts
+}
+
+/// The Pinion charts with a drive unit: no BB shell, the down tube and
+/// chainstays end on the outline, and the chart geometry doesn't move.
+#[test]
+fn pinion_charts_solve_with_a_drive_unit() {
+    let library = Library::builtin().unwrap();
+    for chart in pinion_charts() {
+        for size in &chart.sizes {
+            let label = format!("{} {}", chart.name, size.size);
+            let mut project = project_for(&chart, size);
+            project
+                .geometry
+                .pin(V::HeadTubeLength, head_tube_length(&chart, size));
+            let bare = solve(&chart, size, &project);
+            let defaults = defaults_for(
+                size.front_tyre_diameter
+                    .unwrap_or(chart.front_tyre_diameter),
+                size.rear_tyre_diameter.unwrap_or(chart.rear_tyre_diameter),
+            );
+
+            project.drive.unit = Some(DriveUnit {
+                component: ComponentReference::Custom(synthetic_unit(DriveUnitKind::Gearbox)),
+                rotation: Degrees(-5.0),
+            });
+            let (resolved, notes) = resolve(&project, &library);
+            assert!(
+                notes.iter().all(|d| d.severity != Severity::Error),
+                "{label}: {notes:?}"
+            );
+            let (geometry, _) = solve_geometry_with(&project, &defaults, &resolved);
+            let geometry = geometry.unwrap();
+            assert_eq!(geometry, bare, "{label}: geometry moved");
+
+            let (tubes, diagnostics) =
+                solve_tubes_with(&project, Some(&geometry), &defaults, &resolved);
+            let tubes = tubes.unwrap_or_else(|| panic!("{label}: {diagnostics:?}"));
+            assert!(
+                tubes.tube(TubeKind::BottomBracketShell).is_none(),
+                "{label}"
+            );
+            let outline = &resolved.drive_unit.as_ref().unwrap().outline;
+            let on_outline = |p: Point| {
+                outline
+                    .iter()
+                    .zip(outline.iter().cycle().skip(1))
+                    .any(|(a, b)| {
+                        let (ab, ap) = ((b.x - a.x, b.y - a.y), (p.x - a.x, p.y - a.y));
+                        let len = ab.0.hypot(ab.1);
+                        let t = (ap.0 * ab.0 + ap.1 * ab.1) / (len * len);
+                        (ap.0 * ab.1 - ap.1 * ab.0).abs() / len < 1e-6 && (0.0..=1.0).contains(&t)
+                    })
+            };
+            assert!(
+                on_outline(tubes.tube(TubeKind::DownTube).unwrap().end),
+                "{label}"
+            );
+            match tubes.tube(TubeKind::Chainstay) {
+                Some(stay) => assert!(on_outline(stay.start), "{label}"),
+                None => assert!(chart.rear_travel.is_some(), "{label}"),
+            }
+            assert!(
+                tubes.fittings.iter().any(|f| f.mass == 120.0),
+                "{label}: mounting plate"
+            );
+        }
+    }
+}
+
+/// The library fork selected with the sheet's axle-to-crown kept as an
+/// override: the chart geometry doesn't move (S-COMPONENTS Done when).
+#[test]
+fn pinion_charts_solve_with_a_library_fork() {
+    let library = Library::builtin().unwrap();
+    for (chart, fork) in pinion_charts().into_iter().zip([
+        "rockshox/sid-sl-select/2025/29-110-44",
+        "rockshox/lyrik-ultimate/2025/29-160-44",
+    ]) {
+        for size in &chart.sizes {
+            let mut project = project_for(&chart, size);
+            project
+                .geometry
+                .pin(V::HeadTubeLength, head_tube_length(&chart, size));
+            let bare = solve(&chart, size, &project);
+            project.components.fork = Some(ComponentReference::Library(ComponentId(fork.into())));
+            // Front travel set to the fork's, so there's no travel mismatch.
+            project.front_travel = library
+                .forks
+                .get(&ComponentId(fork.into()))
+                .map(|f| f.travel);
+            let (resolved, _) = resolve(&project, &library);
+            assert!(resolved.fork.is_some(), "{fork}");
+            let defaults = defaults_for(
+                size.front_tyre_diameter
+                    .unwrap_or(chart.front_tyre_diameter),
+                size.rear_tyre_diameter.unwrap_or(chart.rear_tyre_diameter),
+            );
+            let (geometry, _) = solve_geometry_with(&project, &defaults, &resolved);
+            let geometry = geometry.unwrap();
+            assert_eq!(
+                geometry.static_state, bare.static_state,
+                "{} {}",
+                chart.name, size.size
+            );
+            assert_eq!(geometry.fork_axle_to_crown, chart.fork_axle_to_crown);
         }
     }
 }

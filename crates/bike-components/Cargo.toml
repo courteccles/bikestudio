@@ -1,0 +1,20 @@
+[package]
+name = "bike-components"
+description = "Component data for bikestudio: forks, shocks, drive units and batteries, with their side-view drawings."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+bike-model = { path = "../bike-model" }
+serde.workspace = true
+thiserror.workspace = true
+toml.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

@@ -3,12 +3,20 @@
 //! `Project` holds inputs only and is the only thing saved. The output types
 //! in `solved` are recomputed every time and never stored.
 
+mod components;
 mod geometry;
 mod project;
+pub mod shape;
 mod solved;
 mod tubes;
 mod units;
 
+pub use components::{
+    Battery, BatteryPosition, BatterySetup, ComponentId, ComponentName, ComponentReference,
+    Components, DriveSystem, DriveUnit, DriveUnitComponent, DriveUnitKind, Fork, MassProperties,
+    MotorSpecification, Mount, OutlineAccuracy, ResolvedBattery, ResolvedComponents,
+    ResolvedDriveUnit, ResolvedFork, ResolvedShock, Shock, ShockMount, SpringType, Steerer,
+};
 pub use geometry::{
     CrankSetup, ForkOverrides, GeometryInputs, GeometryVariable, Parameter, PedalSize,
 };

@@ -4,6 +4,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
+use crate::components::{Components, DriveSystem};
 use crate::geometry::{CrankSetup, ForkOverrides, GeometryInputs};
 use crate::tubes::TubeInputs;
 use crate::units::Millimeters;
@@ -44,6 +45,12 @@ pub struct Project {
     /// Material, seat tube length, junctions and sections (S-TUBES).
     #[serde(default)]
     pub tubes: TubeInputs,
+    /// Selected fork and shock (S-COMPONENTS).
+    #[serde(default)]
+    pub components: Components,
+    /// Drive unit and battery (S-COMPONENTS).
+    #[serde(default)]
+    pub drive: DriveSystem,
 }
 
 impl Default for Project {
@@ -58,6 +65,8 @@ impl Default for Project {
             fork: ForkOverrides::default(),
             crank: CrankSetup::default(),
             tubes: TubeInputs::default(),
+            components: Components::default(),
+            drive: DriveSystem::default(),
         }
     }
 }

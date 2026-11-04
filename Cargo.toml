@@ -1,6 +1,11 @@
 [workspace]
 resolver = "3"
-members = ["crates/bike-model", "crates/bike-defaults", "crates/bike-geometry"]
+members = [
+    "crates/bike-model",
+    "crates/bike-defaults",
+    "crates/bike-components",
+    "crates/bike-geometry",
+]
 
 [workspace.package]
 version = "0.1.0"

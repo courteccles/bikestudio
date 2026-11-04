@@ -12,6 +12,7 @@ bike-defaults = { path = "../bike-defaults" }
 bike-model = { path = "../bike-model" }
 
 [dev-dependencies]
+bike-components = { path = "../bike-components" }
 proptest.workspace = true
 serde.workspace = true
 toml.workspace = true

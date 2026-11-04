@@ -24,11 +24,11 @@ use std::collections::BTreeMap;
 
 use bike_defaults::{DefaultBike, Defaults};
 use bike_model::{
-    Diagnostic, FramePoints, GeometryState, GeometryVariable as V, Point, Project, Severity,
-    SolvedGeometry, ValueSource,
+    Diagnostic, FramePoints, GeometryState, GeometryVariable as V, Point, Project,
+    ResolvedComponents, Severity, SolvedGeometry, ValueSource,
 };
 
-pub use tubes::{solve_tubes, tube_mass};
+pub use tubes::{solve_tubes, solve_tubes_with, tube_mass};
 
 /// Pinned values that disagree by more than this are a conflict (G6).
 pub const CONFLICT_TOLERANCE_MM: f64 = 1.0;
@@ -84,20 +84,31 @@ struct Setup {
 
 type Values = BTreeMap<V, f64>;
 
-/// Solves the project's geometry. Returns `None` only when nothing sensible can
-/// be drawn; the diagnostics always say why.
+/// Solves the project's geometry with no components selected. Returns `None`
+/// only when nothing sensible can be drawn; the diagnostics always say why.
 pub fn solve_geometry(
     project: &Project,
     defaults: &Defaults,
 ) -> (Option<SolvedGeometry>, Vec<Diagnostic>) {
+    solve_geometry_with(project, defaults, &ResolvedComponents::default())
+}
+
+/// Solves the project's geometry using the resolved components (S-COMPONENTS
+/// C12): a selected fork replaces the default fork, and its travel is used (C4).
+pub fn solve_geometry_with(
+    project: &Project,
+    defaults: &Defaults,
+    components: &ResolvedComponents,
+) -> (Option<SolvedGeometry>, Vec<Diagnostic>) {
     let mut diagnostics = Vec::new();
-    let solved = solve(project, defaults, &mut diagnostics);
+    let solved = solve(project, defaults, components, &mut diagnostics);
     (solved, diagnostics)
 }
 
 fn solve(
     project: &Project,
     defaults: &Defaults,
+    components: &ResolvedComponents,
     diagnostics: &mut Vec<Diagnostic>,
 ) -> Option<SolvedGeometry> {
     // Wheels: a missing size uses the default (G12).
@@ -134,18 +145,24 @@ fn solve(
     let rear_diameter = diameter(&rear_key, diagnostics);
     let (front_diameter, rear_diameter) = (front_diameter?, rear_diameter?);
 
-    // Travel: none means rigid.
-    let front_travel = project.front_travel.map_or(0.0, |t| t.0);
+    // Travel: none means rigid. A selected fork's travel wins (S-COMPONENTS C4).
+    let selected_fork = components.fork.as_ref().map(|f| &f.fork);
+    let front_travel =
+        selected_fork.map_or(project.front_travel.map_or(0.0, |t| t.0), |f| f.travel.0);
     if !(front_travel.is_finite() && front_travel >= 0.0) {
         impossible(diagnostics, "Front travel must be zero or more.");
         return None;
     }
     let is_hardtail = front_travel > 0.0 && project.rear_travel.is_none();
 
-    // Fork: overrides, else defaults by front wheel and travel (G3).
+    // Fork: overrides, else the selected fork, else defaults by front wheel and travel (G3, C4).
     let fork_entry = defaults.forks.forks.get(&front_key);
-    let default_a2c = fork_entry.map(|f| f.axle_to_crown(front_travel));
-    let default_offset = fork_entry.map(|f| f.offset);
+    let default_a2c = selected_fork
+        .map(|f| f.axle_to_crown.0)
+        .or_else(|| fork_entry.map(|f| f.axle_to_crown(front_travel)));
+    let default_offset = selected_fork
+        .map(|f| f.offset.0)
+        .or_else(|| fork_entry.map(|f| f.offset));
     let axle_to_crown = project.fork.axle_to_crown.map(|m| m.0).or(default_a2c);
     let offset = project.fork.offset.map(|m| m.0).or(default_offset);
     let (Some(axle_to_crown), Some(offset)) = (axle_to_crown, offset) else {
@@ -159,7 +176,9 @@ fn solve(
         impossible(diagnostics, "Fork axle-to-crown must be positive.");
         return None;
     }
-    if project.fork.axle_to_crown.is_none() || project.fork.offset.is_none() {
+    if selected_fork.is_none()
+        && (project.fork.axle_to_crown.is_none() || project.fork.offset.is_none())
+    {
         let fork = if front_travel > 0.0 {
             format!("{front_travel:.0} mm")
         } else {

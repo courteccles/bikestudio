@@ -10,22 +10,42 @@
 use std::f64::consts::PI;
 
 use bike_defaults::{Defaults, FittingPlace, MaterialEntry};
+use bike_model::shape::first_crossing;
 use bike_model::{
-    Diagnostic, Material, Point, Project, Severity, SolvedGeometry, SolvedTubes, Tube, TubeFitting,
-    TubeKind, ValueSource,
+    Diagnostic, Material, Point, Project, ResolvedComponents, ResolvedDriveUnit, Severity,
+    SolvedGeometry, SolvedTubes, Tube, TubeFitting, TubeKind, ValueSource,
 };
 
 use crate::{add, scale, sub};
 
-/// Builds the frame's tubes from the solved geometry. Returns `None` with
-/// diagnostics when there's no geometry or the tube inputs are impossible.
+/// Builds the frame's tubes from the solved geometry, with no drive unit.
+/// Returns `None` with diagnostics when there's no geometry or the tube inputs
+/// are impossible.
 pub fn solve_tubes(
     project: &Project,
     geometry: Option<&SolvedGeometry>,
     defaults: &Defaults,
 ) -> (Option<SolvedTubes>, Vec<Diagnostic>) {
+    solve_tubes_with(project, geometry, defaults, &ResolvedComponents::default())
+}
+
+/// Builds the frame's tubes with the resolved components. A drive unit
+/// replaces the BB shell, and the down tube and chainstays end on its outline
+/// (S-COMPONENTS C8).
+pub fn solve_tubes_with(
+    project: &Project,
+    geometry: Option<&SolvedGeometry>,
+    defaults: &Defaults,
+    components: &ResolvedComponents,
+) -> (Option<SolvedTubes>, Vec<Diagnostic>) {
     let mut diagnostics = Vec::new();
-    let tubes = solve(project, geometry, defaults, &mut diagnostics);
+    let tubes = solve(
+        project,
+        geometry,
+        defaults,
+        components.drive_unit.as_ref(),
+        &mut diagnostics,
+    );
     (tubes, diagnostics)
 }
 
@@ -33,6 +53,7 @@ fn solve(
     project: &Project,
     geometry: Option<&SolvedGeometry>,
     defaults: &Defaults,
+    drive_unit: Option<&ResolvedDriveUnit>,
     diagnostics: &mut Vec<Diagnostic>,
 ) -> Option<SolvedTubes> {
     let Some(geometry) = geometry else {
@@ -149,17 +170,36 @@ fn solve(
     let crank = points.crank_centre;
     let full_suspension = project.rear_travel.is_some();
 
+    // With a drive unit, the down tube and chainstays end on its outline (C8).
+    let outline: Option<Vec<Point>> =
+        drive_unit.map(|d| d.outline.iter().map(|p| add(*p, crank)).collect());
+    let mut bad_unit = Vec::new();
+    let mut on_outline = |from: Point, tube: &str| match &outline {
+        None => crank,
+        Some(outline) => first_crossing(outline, from, crank).unwrap_or_else(|| {
+            bad_unit.push(format!(
+                "The {tube} centreline doesn't meet the drive unit outline."
+            ));
+            crank
+        }),
+    };
+    let down_end = on_outline(down_front, "down tube");
+    let chainstay_end = on_outline(points.rear_axle, "chainstay");
+
     let mut tubes = Vec::new();
     for kind in TubeKind::ALL {
         if full_suspension && kind.is_rear() {
             continue;
         }
+        if drive_unit.is_some() && kind == TubeKind::BottomBracketShell {
+            continue;
+        }
         let (start, end) = match kind {
             TubeKind::HeadTube => (points.head_tube_bottom, points.head_tube_top),
             TubeKind::TopTube => (top_front, seat_junction),
-            TubeKind::DownTube => (down_front, crank),
+            TubeKind::DownTube => (down_front, down_end),
             TubeKind::SeatTube => (seat_base, seat_tube_top),
-            TubeKind::Chainstay => (crank, points.rear_axle),
+            TubeKind::Chainstay => (chainstay_end, points.rear_axle),
             TubeKind::Seatstay => (points.rear_axle, seat_junction),
             TubeKind::BottomBracketShell => (crank, crank),
         };
@@ -197,6 +237,16 @@ fn solve(
             wall_source,
         });
     }
+    if !bad_unit.is_empty() {
+        for message in bad_unit {
+            diagnostics.push(Diagnostic::new(
+                Severity::Error,
+                "drive_unit.tube_misses",
+                message,
+            ));
+        }
+        return None;
+    }
     if !bad.is_empty() {
         for message in bad {
             impossible(diagnostics, message);
@@ -206,7 +256,15 @@ fn solve(
 
     let tubes_mass: f64 = tubes.iter().map(|t| t.mass).sum();
     let tubes_com = weighted(tubes.iter().map(|t| (t.mass, t.centre_of_mass)));
-    let fittings = fittings(entry, full_suspension, points, seat_tube_top, tubes_com);
+    let mut fittings = fittings(entry, full_suspension, points, seat_tube_top, tubes_com);
+    // The frame-side plate a drive unit bolts to is frame mass (C8).
+    if let Some(unit) = drive_unit.filter(|d| d.unit.frame_mount_mass > 0.0) {
+        fittings.push(TubeFitting {
+            name: format!("{} mounting plate", unit.unit.name.model),
+            mass: unit.unit.frame_mount_mass,
+            position: crank,
+        });
+    }
     let frame_mass = tubes_mass + fittings.iter().map(|f| f.mass).sum::<f64>();
     let frame_centre_of_mass = weighted(
         tubes

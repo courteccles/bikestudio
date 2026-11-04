@@ -123,8 +123,8 @@ impl GeometryInputs {
     }
 }
 
-/// Fork dimensions that override the defaults (S-GEOM G3). Until S-COMPONENTS
-/// adds a fork library, defaults come from `bike-defaults/fork.toml`.
+/// Fork dimensions that override the selected fork, or the defaults in
+/// `bike-defaults/fork.toml` when none is selected (S-GEOM G3, S-COMPONENTS C4).
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ForkOverrides {

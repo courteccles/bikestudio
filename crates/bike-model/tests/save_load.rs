@@ -1,7 +1,10 @@
 use bike_model::{
-    CURRENT_SCHEMA_VERSION, CrankSetup, ForkOverrides, GeometryInputs, GeometryVariable,
-    JunctionOffsets, LoadError, Material, Millimeters, Parameter, PedalSize, Project, TubeInputs,
-    TubeKind, TubeSection, WheelSize,
+    Battery, BatteryPosition, BatterySetup, CURRENT_SCHEMA_VERSION, ComponentId, ComponentName,
+    ComponentReference, Components, CrankSetup, Degrees, DriveSystem, DriveUnit,
+    DriveUnitComponent, DriveUnitKind, ForkOverrides, GeometryInputs, GeometryVariable,
+    JunctionOffsets, LoadError, MassProperties, Material, Millimeters, MotorSpecification, Mount,
+    OutlineAccuracy, Parameter, PedalSize, Point, Project, Shock, ShockMount, SpringType,
+    TubeInputs, TubeKind, TubeSection, WheelSize,
 };
 
 fn filled() -> Project {
@@ -45,6 +48,90 @@ fn filled() -> Project {
             )]
             .into(),
         },
+        components: Components {
+            fork: Some(ComponentReference::Library(ComponentId(
+                "rockshox/lyrik-ultimate/2025/29-160-44".into(),
+            ))),
+            shock: Some(ComponentReference::Custom(Shock {
+                name: name("Builder", "Prototype", "205x62.5"),
+                eye_to_eye: Millimeters(205.0),
+                stroke: Millimeters(62.5),
+                mount: ShockMount::Trunnion,
+                spring: SpringType::Coil,
+                body_diameter: Some(Millimeters(30.0)),
+                can_diameter: None,
+                reservoir: true,
+                mass: MassProperties {
+                    mass: 700.0,
+                    centre_of_mass: Some(Point::new(80.0, 0.0)),
+                },
+                svg_path: None,
+                source: "builder's drawing".into(),
+            })),
+        },
+        drive: DriveSystem {
+            unit: Some(DriveUnit {
+                component: ComponentReference::Custom(DriveUnitComponent {
+                    name: name("Builder", "Test unit", "a"),
+                    kind: DriveUnitKind::MotorGearbox,
+                    motor: Some(MotorSpecification {
+                        rated_power: 250.0,
+                        peak_power: Some(600.0),
+                        torque: 85.0,
+                    }),
+                    mounts: vec![Mount {
+                        position: Point::new(50.0, 40.0),
+                        diameter: Millimeters(8.0),
+                    }],
+                    outline: vec![
+                        Point::new(-80.0, -60.0),
+                        Point::new(90.0, -60.0),
+                        Point::new(90.0, 70.0),
+                        Point::new(-80.0, 70.0),
+                    ],
+                    outline_accuracy: OutlineAccuracy::Approximate,
+                    output_sprocket: Some(30),
+                    ratios: Some(vec![0.5, 1.0, 3.0]),
+                    mass: MassProperties {
+                        mass: 4000.0,
+                        centre_of_mass: None,
+                    },
+                    frame_mount_mass: 150.0,
+                    svg_path: Some("M 0 0 L 10 0".into()),
+                    source: "builder's drawing".into(),
+                }),
+                rotation: Degrees(-10.0),
+            }),
+            battery: Some(BatterySetup {
+                component: ComponentReference::Custom(Battery {
+                    name: name("Builder", "Pack", "720"),
+                    capacity: 720.0,
+                    nominal_voltage: 36.0,
+                    amp_hours: Some(20.0),
+                    length: Millimeters(400.0),
+                    width: Millimeters(70.0),
+                    height: Millimeters(80.0),
+                    outline: vec![],
+                    mass: MassProperties {
+                        mass: 3800.0,
+                        centre_of_mass: None,
+                    },
+                    svg_path: None,
+                    source: "builder's scale".into(),
+                }),
+                distance_from_down_tube_end: Millimeters(60.0),
+                position: BatteryPosition::Under,
+            }),
+        },
+    }
+}
+
+fn name(make: &str, model: &str, variant: &str) -> ComponentName {
+    ComponentName {
+        make: make.into(),
+        model: model.into(),
+        year: 2026,
+        variant: variant.into(),
     }
 }
 

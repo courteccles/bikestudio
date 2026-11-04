@@ -1,0 +1,17 @@
+# RockShox rear shocks (S-COMPONENTS C5). One entry per model and year; each
+# variant is an eye-to-eye x stroke size. Lengths in mm, mass in grams.
+make = "RockShox"
+
+[[models]]
+model = "Super Deluxe Ultimate"
+year = 2025
+spring = "air"
+source = "SRAM model page RS-SDLX-ULT-C2 (https://www.sram.com/en/rockshox/models/rs-sdlx-ult-c2): sizes include 205x62.5(TR); body eyelet options include trunnion. Retrieved 2026-11-03."
+
+[[models.variants]]
+variant = "205x62.5-trunnion"
+mount = "trunnion"
+eye_to_eye = 205.0
+stroke = 62.5
+mass = { mass = 458.0 }
+mass_source = "SRAM model page RS-SDLX-ULT-C2: 458 g, based on 210x50, linear air can with 1 positive token, standard/standard hardware. No weight is published for 205x62.5 trunnion, so the 210x50 weight is used. Centre of mass not published: drawing centroid. Retrieved 2026-11-03."
