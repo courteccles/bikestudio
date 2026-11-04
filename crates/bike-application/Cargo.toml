@@ -1,0 +1,27 @@
+[package]
+name = "bike-application"
+description = "The bikestudio desktop app: studio shell, Specification panel and side view."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "bikestudio"
+path = "src/main.rs"
+
+[dependencies]
+bike-components = { path = "../bike-components" }
+bike-defaults = { path = "../bike-defaults" }
+bike-geometry = { path = "../bike-geometry" }
+bike-model = { path = "../bike-model" }
+gpui-kit = "0.9"
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+gpui-kit = { version = "0.9", features = ["test-support"] }
+
+[lints]
+workspace = true

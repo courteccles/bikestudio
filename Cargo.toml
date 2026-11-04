@@ -5,6 +5,7 @@ members = [
     "crates/bike-defaults",
     "crates/bike-components",
     "crates/bike-geometry",
+    "crates/bike-application",
 ]
 
 [workspace.package]
