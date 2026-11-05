@@ -75,10 +75,6 @@ fn solve(
                 .into_iter()
                 .find(|m| m.key() == t.default_material)
                 .unwrap_or(Material::Steel);
-            note_default(
-                diagnostics,
-                format!("Frame material {} is a default.", m.label()),
-            );
             (m, ValueSource::Default)
         }
     };
@@ -95,41 +91,21 @@ fn solve(
         Some(v) => (v, ValueSource::Pinned),
         None => {
             let v = defaults.geometry.seat_tube_length.medium;
-            note_default(
-                diagnostics,
-                format!("Seat tube length {v:.1} is a default."),
-            );
             (v, ValueSource::Default)
         }
     };
     let j = &inputs.junctions;
-    let junction = |value: Option<bike_model::Millimeters>,
-                    default: f64,
-                    name: &str,
-                    diagnostics: &mut Vec<Diagnostic>| {
-        value.map(|m| m.0).unwrap_or_else(|| {
-            note_default(diagnostics, format!("{name} {default:.1} is a default."));
-            default
-        })
-    };
+    let junction =
+        |value: Option<bike_model::Millimeters>, default: f64| value.map_or(default, |m| m.0);
     let top_below = junction(
         j.top_tube_below_head_tube_top,
         t.junctions.top_tube_below_head_tube_top,
-        "Top tube junction below the head tube top",
-        diagnostics,
     );
     let down_above = junction(
         j.down_tube_above_head_tube_bottom,
         t.junctions.down_tube_above_head_tube_bottom,
-        "Down tube junction above the head tube bottom",
-        diagnostics,
     );
-    let overhang = junction(
-        j.seat_tube_overhang,
-        t.junctions.seat_tube_overhang,
-        "Seat tube overhang",
-        diagnostics,
-    );
+    let overhang = junction(j.seat_tube_overhang, t.junctions.seat_tube_overhang);
 
     let points = &geometry.static_state.points;
     let head_vec = sub(points.head_tube_top, points.head_tube_bottom);
@@ -347,10 +323,6 @@ fn weighted(items: impl Iterator<Item = (f64, Point)>) -> Point {
 
 fn norm(p: Point) -> f64 {
     p.x.hypot(p.y)
-}
-
-fn note_default(diagnostics: &mut Vec<Diagnostic>, message: String) {
-    diagnostics.push(Diagnostic::new(Severity::Info, "tubes.default", message));
 }
 
 fn impossible(diagnostics: &mut Vec<Diagnostic>, message: String) {

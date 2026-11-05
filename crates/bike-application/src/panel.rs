@@ -24,6 +24,48 @@ pub enum Field {
     CrankLength,
     PedalLength,
     PedalThickness,
+    ForkAxleToCrown,
+    ForkOffset,
+    /// Read-only: crank centre to front axle, horizontal.
+    FrontCentre,
+    /// Read-only: crank centre to rear axle, horizontal.
+    RearCentre,
+    /// Read-only: see [`crate::scene::standover`].
+    Standover,
+}
+
+impl Field {
+    /// The letter drawn on the side view and shown next to the field. A–O
+    /// follow the geometry drawing the designer works from (C and P aren't
+    /// used); Q and R are extra.
+    pub fn letter(self) -> Option<char> {
+        Some(match self {
+            Field::Geometry(V::Reach) => 'A',
+            Field::Geometry(V::Stack) => 'B',
+            Field::Geometry(V::HeadTubeAngle) => 'D',
+            Field::Geometry(V::ActualSeatTubeAngle) => 'E',
+            Field::Geometry(V::EffectiveSeatTubeAngle) => 'F',
+            Field::FrontCentre => 'G',
+            Field::RearCentre => 'H',
+            Field::Geometry(V::Wheelbase) => 'I',
+            Field::Geometry(V::BottomBracketHeight) => 'J',
+            Field::Standover => 'K',
+            Field::SeatTubeLength => 'L',
+            Field::ForkOffset => 'M',
+            Field::Geometry(V::HeadTubeLength) => 'N',
+            Field::ForkAxleToCrown => 'O',
+            Field::Geometry(V::BottomBracketDrop) => 'Q',
+            Field::Geometry(V::ChainstayLength) => 'R',
+            _ => return None,
+        })
+    }
+
+    pub fn is_read_only(self) -> bool {
+        matches!(
+            self,
+            Field::FrontCentre | Field::RearCentre | Field::Standover
+        )
+    }
 }
 
 /// The panel's sections, in order.
@@ -31,7 +73,6 @@ pub enum Field {
 pub enum Section {
     Travel,
     Geometry,
-    Frame,
     Tubes,
     Cranks,
 }
@@ -41,7 +82,6 @@ impl Section {
         match self {
             Section::Travel => "Travel",
             Section::Geometry => "Geometry",
-            Section::Frame => "Frame",
             Section::Tubes => "Tubes",
             Section::Cranks => "Cranks",
         }
@@ -63,6 +103,10 @@ pub struct FieldView {
     pub dimmed: bool,
     /// "default" next to a value filled from the defaults.
     pub is_default: bool,
+    /// The side view's letter for this value.
+    pub letter: Option<char>,
+    /// Calculated only: shown, not typed into.
+    pub read_only: bool,
 }
 
 impl Field {
@@ -76,6 +120,46 @@ impl Field {
             _ => display,
         }
     }
+}
+
+/// The text an Up (`up`) or Down arrow gives a field showing `text`.
+/// Angles step 0.1°, millimetres 1 and inches 0.1; `big` (Shift) steps ten
+/// times as far. `None` when the field can't be typed into or `text` isn't
+/// a number.
+pub fn step(
+    view: &FieldView,
+    text: &str,
+    up: bool,
+    big: bool,
+    display: LengthUnit,
+) -> Option<String> {
+    if view.read_only {
+        return None;
+    }
+    let shown = if text.trim().is_empty() {
+        &view.text
+    } else {
+        text
+    };
+    let value: f64 = shown.trim().parse().ok()?;
+    let unit = view.field.unit(display);
+    let mut amount = if view.field.is_angle() {
+        0.1
+    } else {
+        match unit {
+            LengthUnit::Millimeters => 1.0,
+            LengthUnit::Inches => 0.1,
+        }
+    };
+    if big {
+        amount *= 10.0;
+    }
+    let next = if up { value + amount } else { value - amount };
+    Some(if view.field.is_angle() {
+        format_angle(Degrees(next))
+    } else {
+        format_length(Millimeters::from_unit(next, unit), unit)
+    })
 }
 
 /// Every field, in panel order, as it shows now. The document must be solved.
@@ -102,6 +186,8 @@ pub fn fields(doc: &Document, data: &Data, display: LengthUnit) -> Vec<FieldView
             locked: None,
             dimmed: travel.is_none(),
             is_default: false,
+            letter: None,
+            read_only: false,
         });
     }
 
@@ -127,51 +213,83 @@ pub fn fields(doc: &Document, data: &Data, display: LengthUnit) -> Vec<FieldView
             locked: Some(pinned.is_some()),
             dimmed: pinned.is_none(),
             is_default: pinned.is_none() && source == Some(ValueSource::Default),
+            letter: None,
+            read_only: false,
         });
     }
-
-    let seat_pinned = p.tubes.seat_tube_length.pinned();
-    let seat = seat_pinned.or_else(|| tubes.map(|t| t.seat_tube_length));
-    out.push(FieldView {
-        field: Field::SeatTubeLength,
-        section: Section::Frame,
-        label: "Seat tube length".into(),
-        text: length(seat, display),
-        unit: display.label(),
-        locked: Some(seat_pinned.is_some()),
-        dimmed: seat_pinned.is_none(),
-        is_default: seat_pinned.is_none(),
-    });
-    let j = &p.tubes.junctions;
     for (field, label, set, solved) in [
         (
-            Field::TopTubeJunction,
-            "Top tube junction",
-            j.top_tube_below_head_tube_top,
-            tubes.map(|t| t.top_tube_below_head_tube_top),
+            Field::ForkAxleToCrown,
+            "Fork axle-to-crown",
+            p.fork.axle_to_crown,
+            geometry.map(|g| g.fork_axle_to_crown),
         ),
         (
-            Field::DownTubeJunction,
-            "Down tube junction",
-            j.down_tube_above_head_tube_bottom,
-            tubes.map(|t| t.down_tube_above_head_tube_bottom),
-        ),
-        (
-            Field::SeatTubeOverhang,
-            "Seat tube overhang",
-            j.seat_tube_overhang,
-            tubes.map(|t| t.seat_tube_overhang),
+            Field::ForkOffset,
+            "Fork offset",
+            p.fork.offset,
+            geometry.map(|g| g.fork_offset),
         ),
     ] {
         out.push(optional_length(
             field,
-            Section::Frame,
+            Section::Geometry,
             label,
             set,
             solved,
             display,
         ));
     }
+    for (field, label, value) in [
+        (
+            Field::FrontCentre,
+            "Front centre",
+            geometry.map(|g| g.static_state.front_centre),
+        ),
+        (
+            Field::RearCentre,
+            "Rear centre",
+            geometry.map(|g| g.static_state.rear_centre),
+        ),
+        (
+            Field::Standover,
+            "Standover",
+            crate::scene::standover(&doc.solved),
+        ),
+    ] {
+        out.push(FieldView {
+            field,
+            section: Section::Geometry,
+            label: label.into(),
+            text: length(value, display),
+            unit: display.label(),
+            locked: None,
+            dimmed: true,
+            is_default: false,
+            letter: None,
+            read_only: true,
+        });
+    }
+    let seat_pinned = p.tubes.seat_tube_length.pinned();
+    let seat = seat_pinned.or_else(|| tubes.map(|t| t.seat_tube_length));
+    out.push(FieldView {
+        field: Field::SeatTubeLength,
+        section: Section::Geometry,
+        label: "Seat tube length".into(),
+        text: length(seat, display),
+        unit: display.label(),
+        locked: Some(seat_pinned.is_some()),
+        dimmed: seat_pinned.is_none(),
+        is_default: seat_pinned.is_none(),
+        letter: None,
+        read_only: false,
+    });
+    // Geometry rows run in letter order, to match the drawing.
+    let start = out
+        .iter()
+        .position(|v| v.section == Section::Geometry)
+        .unwrap_or(out.len());
+    out[start..].sort_by_key(|v| v.field.letter());
 
     for kind in TubeKind::ALL {
         let tube = tubes.and_then(|t| t.tube(kind));
@@ -220,6 +338,9 @@ pub fn fields(doc: &Document, data: &Data, display: LengthUnit) -> Vec<FieldView
         display,
     ));
     let _ = data;
+    for view in &mut out {
+        view.letter = view.field.letter();
+    }
     out
 }
 
@@ -242,6 +363,8 @@ fn optional_length(
         locked: None,
         dimmed: set.is_none(),
         is_default: set.is_none() && value.is_some(),
+        letter: None,
+        read_only: false,
     }
 }
 
@@ -315,6 +438,16 @@ pub fn commit(
             }
             Command::SetTubes(tubes)
         }
+        Field::ForkAxleToCrown | Field::ForkOffset => {
+            let mut fork = p.fork;
+            if field == Field::ForkOffset {
+                fork.offset = value;
+            } else {
+                fork.axle_to_crown = value;
+            }
+            Command::SetFork(fork)
+        }
+        Field::FrontCentre | Field::RearCentre | Field::Standover => return Ok(None),
         Field::CrankLength => {
             crank.crank_length = value;
             Command::SetCrank(crank)
@@ -380,6 +513,11 @@ fn shown_value(doc: &Document, field: Field) -> Option<f64> {
         Field::CrankLength => g.map(|g| g.crank_length),
         Field::PedalLength => g.map(|g| g.pedal_length),
         Field::PedalThickness => g.map(|g| g.pedal_thickness),
+        Field::ForkAxleToCrown => g.map(|g| g.fork_axle_to_crown),
+        Field::ForkOffset => g.map(|g| g.fork_offset),
+        Field::FrontCentre => g.map(|g| g.static_state.front_centre),
+        Field::RearCentre => g.map(|g| g.static_state.rear_centre),
+        Field::Standover => crate::scene::standover(&doc.solved),
     }
 }
 
@@ -525,5 +663,62 @@ mod tests {
 
         doc.apply(set_material(&doc, Some(Material::Titanium)));
         assert_eq!(doc.project.tubes.material, Some(Material::Titanium));
+    }
+
+    #[test]
+    fn fork_rows_set_overrides_and_derived_rows_are_read_only() {
+        let mut doc = Document::new();
+        let views = solved(&mut doc);
+        let offset = view(&views, Field::ForkOffset);
+        assert_eq!(offset.letter, Some('M'));
+        let command = commit(&doc, &offset, "51", LengthUnit::Millimeters).unwrap();
+        assert!(matches!(
+            command,
+            Some(Command::SetFork(f)) if f.offset == Some(Millimeters(51.0))
+        ));
+        let standover = view(&views, Field::Standover);
+        assert!(standover.read_only && !standover.text.is_empty());
+        assert_eq!(
+            commit(&doc, &standover, "1", LengthUnit::Millimeters).unwrap(),
+            None
+        );
+        let letters: Vec<char> = views
+            .iter()
+            .filter(|v| v.section == Section::Geometry)
+            .filter_map(|v| v.letter)
+            .collect();
+        assert_eq!(letters.iter().collect::<String>(), "ABDEFGHIJKLMNOQR");
+    }
+
+    #[test]
+    fn arrows_step_angles_lengths_and_inches() {
+        let mut doc = Document::new();
+        let views = solved(&mut doc);
+        let head = view(&views, Field::Geometry(V::HeadTubeAngle));
+        assert_eq!(
+            step(&head, "64", true, false, LengthUnit::Millimeters).as_deref(),
+            Some("64.1")
+        );
+        assert_eq!(
+            step(&head, "64", false, true, LengthUnit::Millimeters).as_deref(),
+            Some("63.0")
+        );
+        let travel = view(&views, Field::Travel(End::Front));
+        // Travel stays in millimetres even when the display is in inches.
+        assert_eq!(
+            step(&travel, "150", true, false, LengthUnit::Inches).as_deref(),
+            Some("151.0")
+        );
+        let crank = view(&views, Field::CrankLength);
+        assert_eq!(
+            step(&crank, "6.5", true, false, LengthUnit::Inches).as_deref(),
+            Some("6.600")
+        );
+        assert_eq!(step(&crank, "x", true, false, LengthUnit::Inches), None);
+        let standover = view(&views, Field::Standover);
+        assert_eq!(
+            step(&standover, "800", true, false, LengthUnit::Millimeters),
+            None
+        );
     }
 }

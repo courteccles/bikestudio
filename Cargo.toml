@@ -24,3 +24,8 @@ toml = "0.9"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
+
+# GPUI is sluggish unoptimised: optimise dependencies even in dev builds,
+# so `cargo run` stays responsive while our own crates still build quickly.
+[profile.dev.package."*"]
+opt-level = 2

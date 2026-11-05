@@ -256,7 +256,7 @@ fn defaults_are_labelled() {
         .iter()
         .filter(|d| d.code == "tubes.default")
         .count();
-    assert_eq!(count, 5, "{diagnostics:?}");
+    assert_eq!(count, 0, "defaults aren't reported: {diagnostics:?}");
 }
 
 #[test]

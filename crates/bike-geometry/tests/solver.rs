@@ -59,14 +59,8 @@ fn hardtail() -> Project {
 fn empty_project_shows_a_default_bike() {
     let (solved, diagnostics) = solve_geometry(&Project::default(), &defaults());
     let solved = solved.expect("a default bike");
-    for code in [
-        "geometry.unpinned",
-        "wheel.missing",
-        "fork.default",
-        "geometry.default",
-    ] {
-        assert!(has(&diagnostics, code), "missing {code}: {diagnostics:?}");
-    }
+    // Defaults are labelled in `sources`, not reported (S-SHELL amendment).
+    assert!(diagnostics.is_empty(), "{diagnostics:?}");
     assert!(
         !diagnostics.iter().any(|d| d.severity == Severity::Error),
         "{diagnostics:?}"
@@ -84,9 +78,8 @@ fn wheels_only_project_solves() {
         rear_wheel: Some(WheelSize("27.5".into())),
         ..Project::default()
     };
-    let (solved, diagnostics) = solve_geometry(&p, &defaults());
+    let (solved, _) = solve_geometry(&p, &defaults());
     assert!(solved.is_some());
-    assert!(!has(&diagnostics, "wheel.missing"));
 }
 
 #[test]

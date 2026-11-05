@@ -113,22 +113,15 @@ fn solve(
 ) -> Option<SolvedGeometry> {
     // Wheels: a missing size uses the default (G12).
     let default_wheel = &defaults.geometry.default_wheel;
-    let wheel_key =
-        |wheel: &Option<bike_model::WheelSize>, end: &str, diagnostics: &mut Vec<Diagnostic>| {
-            match wheel {
-                Some(w) => w.0.clone(),
-                None => {
-                    diagnostics.push(Diagnostic::new(
-                        Severity::Info,
-                        "wheel.missing",
-                        format!("No {end} wheel size set. Using the default {default_wheel}\"."),
-                    ));
-                    default_wheel.clone()
-                }
-            }
-        };
-    let front_key = wheel_key(&project.front_wheel, "front", diagnostics);
-    let rear_key = wheel_key(&project.rear_wheel, "rear", diagnostics);
+    // Defaults are labelled through `sources`, not diagnostics (S-SHELL
+    // amendment 2026-11-04).
+    let wheel_key = |wheel: &Option<bike_model::WheelSize>| {
+        wheel
+            .as_ref()
+            .map_or_else(|| default_wheel.clone(), |w| w.0.clone())
+    };
+    let front_key = wheel_key(&project.front_wheel);
+    let rear_key = wheel_key(&project.rear_wheel);
     let diameter =
         |key: &str, diagnostics: &mut Vec<Diagnostic>| match defaults.wheel_sizes.sizes.get(key) {
             Some(entry) => Some(entry.diameter),
@@ -176,21 +169,6 @@ fn solve(
         impossible(diagnostics, "Fork axle-to-crown must be positive.");
         return None;
     }
-    if selected_fork.is_none()
-        && (project.fork.axle_to_crown.is_none() || project.fork.offset.is_none())
-    {
-        let fork = if front_travel > 0.0 {
-            format!("{front_travel:.0} mm")
-        } else {
-            "rigid".to_string()
-        };
-        diagnostics.push(Diagnostic::new(
-            Severity::Info,
-            "fork.default",
-            format!("No fork selected. Using default {fork} {front_key}\" fork."),
-        ));
-    }
-
     // Crank and pedal (G13). Medium rider until S-MASS adds the rider.
     let crank_length = project
         .crank
@@ -247,14 +225,6 @@ fn solve(
             }
         }
     }
-    if pinned.is_empty() {
-        diagnostics.push(Diagnostic::new(
-            Severity::Info,
-            "geometry.unpinned",
-            format!("No geometry pinned yet. Showing a default bike for {front_key}\" wheels."),
-        ));
-    }
-
     // Choose what each equation solves for (G5).
     let mut unknowns: Vec<(usize, V)> = Vec::new();
     let mut checks: Vec<usize> = Vec::new();
@@ -317,20 +287,6 @@ fn solve(
                     ),
                 ));
             }
-        }
-    }
-
-    for variable in V::ALL {
-        if sources[&variable] == ValueSource::Default {
-            diagnostics.push(Diagnostic::new(
-                Severity::Info,
-                "geometry.default",
-                format!(
-                    "{} {} is a default.",
-                    variable.label(),
-                    format_value(variable, values[&variable])
-                ),
-            ));
         }
     }
 

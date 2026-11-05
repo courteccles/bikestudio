@@ -72,6 +72,7 @@ The saddle point, the seat tube axis, trail, front centre, rear centre and fork 
 ## Changes after approval
 
 - 2026-11-02: Corrected errors left from drafting: BB drop is defined as in G8, the frame has 5 degrees of freedom, actual seat tube angle is in scope (G4), the sag hand calculation covers hardtails only, and chart values recorded as known gaps are exempt from the ±3 mm check.
+- 2026-11-04 (S-SHELL amendment): defaults are no longer reported as diagnostics; the panel labels them from `ValueSource`. `wheel.missing`, `fork.default`, `geometry.unpinned` and `geometry.default` are removed.
 
 ## Open questions
 

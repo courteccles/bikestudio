@@ -3,6 +3,8 @@
 //! the crank centre, +Y up. The theme maps roles to strokes and fills.
 
 use bike_components::drawing;
+
+use crate::panel::Field;
 use bike_model::{
     ComponentName, Degrees, Fork, GeometryVariable as V, LengthUnit, MassProperties, Millimeters,
     Point, ResolvedComponents, Solved, SolvedGeometry, Steerer, TubeKind, WheelSize, format_angle,
@@ -15,6 +17,8 @@ pub enum Role {
     Ground,
     Tyre,
     Rim,
+    Spoke,
+    Hub,
     Frame,
     Fork,
     DriveUnit,
@@ -22,6 +26,8 @@ pub enum Role {
     Ghost,
     Centreline,
     Dimension,
+    /// Dotted lines from the measured points out to an offset dimension.
+    Extension,
     Origin,
 }
 
@@ -37,6 +43,12 @@ pub enum Shape {
     Circle {
         centre: Point,
         radius: f64,
+    },
+    /// A shaded band between two circles, outlined (tyres).
+    Ring {
+        centre: Point,
+        outer: f64,
+        inner: f64,
     },
     /// Text anchored at a point; drawn at a fixed screen size.
     Label {
@@ -82,7 +94,12 @@ impl Scene {
             match &item.shape {
                 Shape::Line { a, b, .. } => points.extend([*a, *b]),
                 Shape::Polygon(p) => points.extend(p.iter().copied()),
-                Shape::Circle { centre, radius } => points.extend([
+                Shape::Ring {
+                    centre,
+                    outer: radius,
+                    ..
+                }
+                | Shape::Circle { centre, radius } => points.extend([
                     Point::new(centre.x - radius, centre.y - radius),
                     Point::new(centre.x + radius, centre.y + radius),
                 ]),
@@ -99,12 +116,13 @@ impl Scene {
     }
 }
 
-/// Builds the side view. `focused` adds that value's dimension callout (H7).
+/// Builds the side view. Every lettered value gets its dimension; `focused`
+/// also shows that one's value (H7).
 pub fn build(
     solved: &Solved,
     components: &ResolvedComponents,
     front_travel: f64,
-    focused: Option<V>,
+    focused: Option<Field>,
     unit: LengthUnit,
 ) -> Option<Scene> {
     let g = solved.geometry.as_ref()?;
@@ -123,20 +141,7 @@ pub fn build(
         (p.rear_axle, g.rear_wheel_diameter),
         (p.front_axle, g.front_wheel_diameter),
     ] {
-        scene.push(
-            Role::Tyre,
-            Shape::Circle {
-                centre: axle,
-                radius: diameter / 2.0,
-            },
-        );
-        scene.push(
-            Role::Rim,
-            Shape::Circle {
-                centre: axle,
-                radius: diameter / 2.0 - TYRE_DEPTH,
-            },
-        );
+        wheel(&mut scene, axle, diameter / 2.0);
     }
 
     // Ghost states for a hardtail (H7).
@@ -199,14 +204,12 @@ pub fn build(
                     },
                 );
             } else {
+                // The tube's body, shaded, with its centreline over it.
                 scene.push(
                     Role::Frame,
-                    Shape::Line {
-                        a: tube.start,
-                        b: tube.end,
-                        width: Some(tube.outside_diameter),
-                    },
+                    Shape::Polygon(band(tube.start, tube.end, tube.outside_diameter)),
                 );
+                scene.line(Role::Centreline, tube.start, tube.end);
             }
         }
     }
@@ -224,22 +227,65 @@ pub fn build(
         Point::new(p.crank_centre.x - 60.0, p.crank_centre.y - 40.0),
         "0,0 crank axis",
     );
-    let dim_y = ground + DIMENSION_GAP;
-    let wheelbase = Point::new(p.rear_axle.x, dim_y);
-    let front = Point::new(p.front_axle.x, dim_y);
-    scene.line(Role::Dimension, wheelbase, front);
-    scene.label(
-        Point::new((wheelbase.x + front.x) / 2.0, dim_y + LABEL_GAP),
-        format!("({})", with_unit(s.value(V::Wheelbase), unit)),
-    );
-
-    if let Some(v) = focused {
-        callout(&mut scene, g, v, unit);
-    }
+    dimensions(&mut scene, solved, focused, unit);
     Some(scene)
 }
 
 const TYRE_DEPTH: f64 = 60.0;
+const RIM_DEPTH: f64 = 25.0;
+const HUB_RADIUS: f64 = 30.0;
+const SPOKES: usize = 32;
+
+/// A wheel: tyre, rim, spokes and hub (mockup 04).
+fn wheel(scene: &mut Scene, axle: Point, radius: f64) {
+    let at = |r: f64, a: f64| Point::new(axle.x + r * a.cos(), axle.y + r * a.sin());
+    let tau = std::f64::consts::TAU;
+    scene.push(
+        Role::Tyre,
+        Shape::Ring {
+            centre: axle,
+            outer: radius,
+            inner: radius - TYRE_DEPTH,
+        },
+    );
+    let rim = radius - TYRE_DEPTH;
+    scene.push(
+        Role::Rim,
+        Shape::Circle {
+            centre: axle,
+            radius: rim - RIM_DEPTH,
+        },
+    );
+    for i in 0..SPOKES {
+        let a = tau * i as f64 / SPOKES as f64;
+        // Crossed lacing: each spoke leaves the hub a little ahead of where it meets the rim.
+        let lead = if i % 2 == 0 { 0.35 } else { -0.35 };
+        scene.line(
+            Role::Spoke,
+            at(HUB_RADIUS, a + lead),
+            at(rim - RIM_DEPTH, a),
+        );
+    }
+    scene.push(
+        Role::Hub,
+        Shape::Circle {
+            centre: axle,
+            radius: HUB_RADIUS,
+        },
+    );
+}
+
+/// A rectangle `width` wide along the line from `a` to `b`.
+fn band(a: Point, b: Point, width: f64) -> Vec<Point> {
+    let d = unit_vector(a, b);
+    let n = Point::new(-d.y * width / 2.0, d.x * width / 2.0);
+    vec![
+        Point::new(a.x + n.x, a.y + n.y),
+        Point::new(b.x + n.x, b.y + n.y),
+        Point::new(b.x - n.x, b.y - n.y),
+        Point::new(a.x - n.x, a.y - n.y),
+    ]
+}
 const DIMENSION_GAP: f64 = 80.0;
 const LABEL_GAP: f64 = 15.0;
 const CALLOUT_RADIUS: f64 = 80.0;
@@ -248,44 +294,205 @@ fn with_unit(mm: f64, unit: LengthUnit) -> String {
     format!("{} {}", format_length(Millimeters(mm), unit), unit.label())
 }
 
-/// The dimension for a focused geometry field (mockup 07).
-fn callout(scene: &mut Scene, g: &SolvedGeometry, v: V, unit: LengthUnit) {
+/// Standover: the top of the top tube above the ground, at the tube's
+/// midpoint.
+pub fn standover(solved: &Solved) -> Option<f64> {
+    let g = solved.geometry.as_ref()?;
+    let top = solved.tubes.as_ref()?.tube(TubeKind::TopTube)?;
+    let mid_y = (top.start.y + top.end.y) / 2.0;
+    Some(mid_y + top.outside_diameter / 2.0 - g.static_state.points.rear_contact.y)
+}
+
+/// Every lettered dimension (the panel shows the same letters). The focused
+/// one carries its value too.
+fn dimensions(scene: &mut Scene, solved: &Solved, focused: Option<Field>, unit: LengthUnit) {
+    let Some(g) = solved.geometry.as_ref() else {
+        return;
+    };
     let s = &g.static_state;
     let p = &s.points;
-    let value = s.value(v);
-    let text = if v.is_angle() {
-        format!("{}°", format_angle(Degrees(value)))
-    } else {
-        with_unit(value, unit)
-    };
-    let mid = |a: Point, b: Point| Point::new((a.x + b.x) / 2.0, (a.y + b.y) / 2.0);
     let crank = p.crank_centre;
-    let (a, b) = match v {
-        V::Stack => (crank, Point::new(crank.x, p.head_tube_top.y)),
-        V::Reach => (Point::new(crank.x, p.head_tube_top.y), p.head_tube_top),
-        V::HeadTubeLength => (p.head_tube_bottom, p.head_tube_top),
-        V::ChainstayLength => (crank, p.rear_axle),
-        V::Wheelbase => (p.rear_axle, p.front_axle),
-        V::BottomBracketHeight => (crank, Point::new(crank.x, p.rear_contact.y)),
-        V::BottomBracketDrop => (
-            crank,
-            Point::new(crank.x, (p.rear_axle.y + p.front_axle.y) / 2.0),
-        ),
-        V::HeadTubeAngle => {
-            arc(scene, p.head_tube_bottom, p.head_tube_top, text);
-            return;
+    let ground = p.rear_contact.y;
+    let tube = |k: TubeKind| solved.tubes.as_ref().and_then(|t| t.tube(k));
+    let axis = unit_vector(p.head_tube_bottom, p.head_tube_top);
+    let forward = Point::new(axis.y, -axis.x);
+    let along = |a: Point, d: Point, k: f64| Point::new(a.x + d.x * k, a.y + d.y * k);
+
+    let text = |field: Field, value: f64| {
+        let letter = field.letter().unwrap_or(' ');
+        if focused != Some(field) {
+            return letter.to_string();
         }
-        V::EffectiveSeatTubeAngle => {
-            arc(scene, crank, p.saddle, text);
-            return;
-        }
-        V::ActualSeatTubeAngle => {
-            arc(scene, p.seat_tube_at_crank_height, p.saddle, text);
-            return;
+        if matches!(field, Field::Geometry(v) if v.is_angle()) {
+            format!("{letter}  {}°", format_angle(Degrees(value)))
+        } else {
+            format!("{letter}  {}", with_unit(value, unit))
         }
     };
-    scene.line(Role::Dimension, a, b);
-    scene.label(mid(a, b), text);
+    let linear = |scene: &mut Scene, field: Field, a: Point, b: Point, value: f64| {
+        scene.line(Role::Dimension, a, b);
+        let n = unit_vector(a, b);
+        let mid = Point::new((a.x + b.x) / 2.0, (a.y + b.y) / 2.0);
+        // Labels sit just off the line, on its left.
+        scene.label(
+            along(mid, Point::new(-n.y, n.x), LABEL_GAP),
+            text(field, value),
+        );
+    };
+
+    // Dotted lines showing where an offset dimension lines up with the bike.
+    let ext = |scene: &mut Scene, from: Point, to: Point| {
+        if (to.x - from.x).hypot(to.y - from.y) > 1.0 {
+            scene.line(Role::Extension, from, to);
+        }
+    };
+
+    let top = p.head_tube_top;
+    let reach_y = top.y + DIMENSION_GAP;
+    linear(
+        scene,
+        Field::Geometry(V::Reach),
+        Point::new(crank.x, reach_y),
+        Point::new(top.x, reach_y),
+        s.value(V::Reach),
+    );
+    ext(scene, crank, Point::new(crank.x, reach_y));
+    ext(scene, top, Point::new(top.x, reach_y));
+    let stack_x = top.x + DIMENSION_GAP;
+    linear(
+        scene,
+        Field::Geometry(V::Stack),
+        Point::new(stack_x, top.y),
+        Point::new(stack_x, crank.y),
+        s.value(V::Stack),
+    );
+    ext(scene, top, Point::new(stack_x, top.y));
+    ext(scene, crank, Point::new(stack_x, crank.y));
+    for (field, vertex, toward) in [
+        (V::HeadTubeAngle, p.head_tube_bottom, top),
+        (
+            V::ActualSeatTubeAngle,
+            p.seat_tube_at_crank_height,
+            p.saddle,
+        ),
+        (V::EffectiveSeatTubeAngle, crank, p.saddle),
+    ] {
+        let f = Field::Geometry(field);
+        arc(scene, vertex, toward, text(f, s.value(field)));
+    }
+    // Front and rear centre at axle height, wheelbase below the ground.
+    linear(
+        scene,
+        Field::FrontCentre,
+        Point::new(crank.x, p.front_axle.y),
+        p.front_axle,
+        s.front_centre,
+    );
+    ext(scene, crank, Point::new(crank.x, p.front_axle.y));
+    linear(
+        scene,
+        Field::RearCentre,
+        Point::new(crank.x, p.rear_axle.y),
+        p.rear_axle,
+        s.rear_centre,
+    );
+    ext(scene, crank, Point::new(crank.x, p.rear_axle.y));
+    let wheelbase_y = ground - DIMENSION_GAP;
+    linear(
+        scene,
+        Field::Geometry(V::Wheelbase),
+        Point::new(p.front_axle.x, wheelbase_y),
+        Point::new(p.rear_axle.x, wheelbase_y),
+        s.value(V::Wheelbase),
+    );
+    for axle in [p.front_axle, p.rear_axle] {
+        ext(scene, axle, Point::new(axle.x, wheelbase_y));
+    }
+    let bb_x = crank.x - DIMENSION_GAP / 2.0;
+    linear(
+        scene,
+        Field::Geometry(V::BottomBracketHeight),
+        Point::new(bb_x, ground),
+        Point::new(bb_x, crank.y),
+        s.value(V::BottomBracketHeight),
+    );
+    ext(scene, crank, Point::new(bb_x, crank.y));
+    let drop_x = crank.x + DIMENSION_GAP / 2.0;
+    linear(
+        scene,
+        Field::Geometry(V::BottomBracketDrop),
+        Point::new(drop_x, crank.y),
+        Point::new(drop_x, (p.rear_axle.y + p.front_axle.y) / 2.0),
+        s.value(V::BottomBracketDrop),
+    );
+    let axle_line = (p.rear_axle.y + p.front_axle.y) / 2.0;
+    ext(scene, p.rear_axle, Point::new(drop_x, axle_line));
+    ext(scene, crank, Point::new(drop_x, crank.y));
+    linear(
+        scene,
+        Field::Geometry(V::ChainstayLength),
+        p.rear_axle,
+        crank,
+        s.value(V::ChainstayLength),
+    );
+    if let (Some(t), Some(height)) = (tube(TubeKind::TopTube), standover(solved)) {
+        let x = (t.start.x + t.end.x) / 2.0;
+        linear(
+            scene,
+            Field::Standover,
+            Point::new(x, ground + height),
+            Point::new(x, ground),
+            height,
+        );
+    }
+    if let Some(t) = tube(TubeKind::SeatTube) {
+        let n = unit_vector(t.start, t.end);
+        let back = Point::new(n.y, -n.x);
+        let off = |q: Point| along(q, back, -DIMENSION_GAP / 2.0);
+        linear(
+            scene,
+            Field::SeatTubeLength,
+            off(t.end),
+            off(t.start),
+            t.length,
+        );
+        ext(scene, t.end, off(t.end));
+        ext(scene, t.start, off(t.start));
+    }
+    // Head tube, offset forward of the steering axis.
+    let ahead = |q: Point| along(q, forward, DIMENSION_GAP / 2.0);
+    linear(
+        scene,
+        Field::Geometry(V::HeadTubeLength),
+        ahead(p.head_tube_bottom),
+        ahead(top),
+        s.value(V::HeadTubeLength),
+    );
+    ext(scene, p.head_tube_bottom, ahead(p.head_tube_bottom));
+    ext(scene, top, ahead(top));
+    // Fork offset: the steering axis to the front axle, square to the axis.
+    let foot = {
+        let d = Point::new(
+            p.front_axle.x - p.head_tube_bottom.x,
+            p.front_axle.y - p.head_tube_bottom.y,
+        );
+        along(p.head_tube_bottom, axis, d.x * axis.x + d.y * axis.y)
+    };
+    linear(scene, Field::ForkOffset, foot, p.front_axle, g.fork_offset);
+    // The steering axis carried down to the offset's foot.
+    ext(scene, p.head_tube_bottom, foot);
+    // Axle-to-crown along the axis, ahead of the fork.
+    let ahead_more = |q: Point| along(q, forward, DIMENSION_GAP);
+    linear(
+        scene,
+        Field::ForkAxleToCrown,
+        ahead_more(p.front_axle),
+        ahead_more(along(p.front_axle, axis, g.fork_axle_to_crown)),
+        g.fork_axle_to_crown,
+    );
+    let crown = along(p.front_axle, axis, g.fork_axle_to_crown);
+    ext(scene, p.front_axle, ahead_more(p.front_axle));
+    ext(scene, crown, ahead_more(crown));
 }
 
 /// An angle from the horizontal at `vertex`, toward `toward`.
@@ -355,7 +562,7 @@ mod tests {
     use super::*;
     use crate::document::{Command, Data, Document};
 
-    fn scene(doc: &mut Document, focused: Option<V>) -> Scene {
+    fn scene(doc: &mut Document, focused: Option<Field>) -> Scene {
         doc.solve(&Data::builtin());
         build(
             &doc.solved,
@@ -372,6 +579,7 @@ mod tests {
         let s = scene(&mut Document::new(), None);
         let count = |role| s.items.iter().filter(|i| i.role == role).count();
         assert_eq!(count(Role::Tyre), 2);
+        assert_eq!(count(Role::Spoke), 2 * SPOKES);
         assert!(count(Role::Frame) >= 6);
         assert!(count(Role::Fork) >= 3);
         assert_eq!(count(Role::Ghost), 0, "rigid: no sag states");
@@ -418,15 +626,34 @@ mod tests {
             Some(Millimeters(150.0)),
         ));
         doc.apply(Command::PinGeometry(V::HeadTubeAngle, 64.0));
-        let s = scene(&mut doc, Some(V::HeadTubeAngle));
+        let s = scene(&mut doc, Some(Field::Geometry(V::HeadTubeAngle)));
         assert_eq!(s.items.iter().filter(|i| i.role == Role::Ghost).count(), 2);
         assert!(
             s.items
                 .iter()
-                .any(|i| matches!(&i.shape, Shape::Label { text, .. } if text == "64.0°"))
+                .any(|i| matches!(&i.shape, Shape::Label { text, .. } if text == "D  64.0°"))
         );
         for v in V::ALL {
-            scene(&mut doc, Some(v));
+            scene(&mut doc, Some(Field::Geometry(v)));
         }
+    }
+
+    #[test]
+    fn every_lettered_value_is_drawn_once() {
+        let s = scene(&mut Document::new(), None);
+        assert!(s.items.iter().filter(|i| i.role == Role::Extension).count() >= 15);
+        let letters: Vec<String> = s
+            .items
+            .iter()
+            .filter_map(|i| match &i.shape {
+                Shape::Label { text, .. } if text.len() == 1 => Some(text.clone()),
+                _ => None,
+            })
+            .collect();
+        let mut expected: Vec<String> = "ABDEFGHIJKLMNOQR".chars().map(String::from).collect();
+        let mut got = letters.clone();
+        got.sort();
+        expected.sort();
+        assert_eq!(got, expected);
     }
 }

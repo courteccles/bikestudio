@@ -34,8 +34,7 @@ fn a_library_fork_solves_like_its_typed_dimensions() {
     selected.components.fork = Some(ComponentReference::Library(ComponentId(LYRIK.into())));
     let (resolved, notes) = resolve(&selected, &library);
     assert!(notes.is_empty(), "{notes:?}");
-    let (from_library, diagnostics) = solve_geometry_with(&selected, &defaults, &resolved);
-    assert!(!has(&diagnostics, "fork.default"));
+    let (from_library, _) = solve_geometry_with(&selected, &defaults, &resolved);
 
     let mut typed = hardtail();
     typed.fork = ForkOverrides {
@@ -87,8 +86,7 @@ fn an_unknown_component_loads_warns_and_solves_from_defaults() {
     let project = Project::from_json(&project.to_json()).unwrap();
     let (resolved, notes) = resolve(&project, &Library::builtin().unwrap());
     assert!(has(&notes, "component.unknown"));
-    let (geometry, diagnostics) = solve_geometry_with(&project, &defaults, &resolved);
-    assert!(has(&diagnostics, "fork.default"));
+    let (geometry, _) = solve_geometry_with(&project, &defaults, &resolved);
     assert_eq!(geometry, solve_geometry(&hardtail(), &defaults).0);
 }
 

@@ -40,6 +40,33 @@ The first runnable app. A designer opens bikestudio, creates or opens a `.bikest
 - New, Open, Save and Save as round-trip a `.bikestud` file, and unsaved changes prompt before they're lost.
 - CI builds and tests `bike-application` on Linux and macOS.
 
+## Changes after approval
+
+2026-11-04, from the first look at the running shell:
+
+- H3 layout: the grid and drawing fill the whole shell between the top bar and status bar. The panel and tray are cards floating over it. The top bar and status bar have no dividing lines. Fit frames the bike in the space the cards leave.
+- H4 panel: Cranks is a normal section, always shown. The Geometry section runs in letter order and adds fork axle-to-crown and offset (editable, via `SetFork`) and front centre, rear centre and standover (read only).
+- H7 side view: every value with a letter has its dimension drawn, labelled with the letter; the focused field also shows its value. The letters follow the designer's geometry drawing: A reach, B stack, D head angle, E actual seat angle, F effective seat angle, G front centre, H rear centre, I wheelbase, J BB height, K standover, L seat tube length, M fork offset, N head tube length, O axle-to-crown. C (effective top tube) and P aren't used. Q BB drop and R chainstay are added. Standover is the top of the top tube above the ground at the tube's midpoint.
+- H7: dotted extension lines run from the measured points out to each offset dimension, so it is clear where it lines up.
+- H8: no "Preview from defaults" caption. A drawing that can't solve is still shown dimmed.
+- H9: Material and the tube fields are in a Tubes tab.
+- H11: there's no settings dialog yet.
+- Defaults aren't diagnostics. Wheels always show a selected size, the default when none is set.
+- H7: tyres are drawn without knobs.
+- H3: the Specification / Linkage / Analysis mode bar is centred in the top bar.
+- Segmented controls: the mode bar, the wheel size selectors and the tray tabs share one style.
+- H4, H9: a divider line (`#262626`) runs under the Specification heading and under the tray tabs, edge to edge across the card.
+- Colours follow the mockups: shell, side view, cards, segmented strips, inputs and popup menus use the sampled mockup palette, and the component theme is pointed at it so menus and buttons match. The Bikes menu, the wheel sizes, the tray tabs, Material and the mode bar all use one segmented style on one strip colour.
+- Colours are sampled exactly from mockup 04: panel `#151719`, tray `#141618`, card border `#232527`, side view border and dividers `#262626`, strong text `#EAEAEC`, labels and inactive segments `#B2B2B8`, units and codes `#85858A`, diagnostic messages `#CFCFD4`, status text `#A3A3A3`.
+- The status bar is 40 px tall (was 28), giving the status and units more room above and below.
+- H3 layout: the side view runs to the right edge of the shell, open on that side. The panel and tray sit 16 px inside it on every side, including the right, with 16 px between them.
+- H4 panel: Seat tube length (L) moves into Geometry, in letter order. The Frame section is removed, with its tube junction and seat tube overhang rows; Cranks stays.
+- H7 Re-center (was Fit): a button over the ground, just above the right end of the tray, that resets pan and zoom and frames the bike as it is now. It is enabled only when the view isn't already centred. Between re-centres the view keeps its framing: edits such as a wheel size redraw the bike in place, never changing the zoom, so the grid and crank axis stay still.
+- H4 fields: clicking or tabbing into a field selects its whole value, so typing replaces it. Up and Down arrows step the value (0.1° for angles, 1 mm or 0.1 in for lengths; Shift steps ten times as far), commit it at once (pinning a free field, as typing does) and keep it selected. Read-only rows ignore the arrows.
+- H7 grid: 1 cm minor and 10 cm major lines, as built. Below the ground the lines are dimmer (`#0E1012`), as in mockup 04.
+- H3: the side view's left edge lines up with the Bikes dropdown (32 px). The Bikes dropdown has a caret, and a settings gear sits before the wordmark; it does nothing until there's a settings dialog (H11). The app registers the bundled icon assets so icons draw.
+- H7 ground: below the ground line the view is filled darker, with the grid running on over it and a 20 px band of fine (0.5 px) diagonal hatching under the line, as in mockup 04.
+
 ## Open questions
 
 - None.

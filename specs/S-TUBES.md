@@ -58,6 +58,7 @@ All points are in S-GEOM's static frame, in millimetres, with the crank centre a
 
 - 2026-11-02: T7 changed. Seat tube length is an input, so a chart "reproduction" would only echo the pin; the charts now test seat tube top and junction placement using Nicolai's seat tube length and overhang. The T3 seat tube junction default rose from 40 to 60 mm to match Nicolai's overhangs.
 - 2026-11-02 (build): `solve_tubes` takes `Option<&SolvedGeometry>`, so it can return `tubes.no_geometry` itself when S-GEOM gave nothing.
+- 2026-11-04 (S-SHELL amendment): defaults are no longer reported as diagnostics; the panel labels them from `ValueSource`. `tubes.default` is removed.
 
 ## Open questions
 
