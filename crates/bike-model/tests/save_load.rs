@@ -13,6 +13,8 @@ fn filled() -> Project {
     geometry.pin(GeometryVariable::Reach, 480.0);
     geometry.pin(GeometryVariable::Stack, 630.0);
     geometry.pin(GeometryVariable::EffectiveSeatTubeAngle, 77.0);
+    geometry.pin(GeometryVariable::FrontCentre, 800.0);
+    geometry.pin(GeometryVariable::RearCentre, 440.0);
     Project {
         schema_version: CURRENT_SCHEMA_VERSION,
         front_wheel: Some(WheelSize("29".into())),
@@ -39,6 +41,8 @@ fn filled() -> Project {
                 down_tube_above_head_tube_bottom: None,
                 seat_tube_overhang: Some(Millimeters(103.0)),
             },
+            standover: Parameter::Pinned(780.0),
+            seat_tube_bend_radius: Some(Millimeters(90.0)),
             sections: [(
                 TubeKind::DownTube,
                 TubeSection {

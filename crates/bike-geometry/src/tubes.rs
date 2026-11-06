@@ -105,7 +105,12 @@ fn solve(
         j.down_tube_above_head_tube_bottom,
         t.junctions.down_tube_above_head_tube_bottom,
     );
-    let overhang = junction(j.seat_tube_overhang, t.junctions.seat_tube_overhang);
+    let mut overhang = junction(j.seat_tube_overhang, t.junctions.seat_tube_overhang);
+    let mut overhang_source = if j.seat_tube_overhang.is_some() {
+        ValueSource::Pinned
+    } else {
+        ValueSource::Default
+    };
 
     let points = &geometry.static_state.points;
     let head_vec = sub(points.head_tube_top, points.head_tube_bottom);
@@ -114,6 +119,48 @@ fn solve(
     let seat_axis_length = norm(seat_vec);
 
     let mut bad = Vec::new();
+
+    // A pinned standover moves the top tube's seat tube junction along the
+    // seat tube; the front junction and seat tube length stay (S-EDIT-CENTERS E2).
+    if let Some(standover) = inputs.standover.pinned() {
+        if j.seat_tube_overhang.is_some() {
+            diagnostics.push(Diagnostic::new(
+                Severity::Error,
+                "geometry.conflict",
+                "Standover and seat tube overhang are both set. Free one of them.",
+            ));
+        } else if seat_axis_length > 0.0 && head_length > 0.0 {
+            let section = inputs
+                .sections
+                .get(&TubeKind::TopTube)
+                .copied()
+                .unwrap_or_default();
+            let [default_diameter, _] =
+                entry.section(TubeKind::TopTube.key()).unwrap_or([0.0, 0.0]);
+            let diameter = section.outside_diameter.map_or(default_diameter, |m| m.0);
+            let ground = points.rear_contact.y;
+            let top_front_y = points.head_tube_top.y - head_vec.y / head_length * top_below;
+            // The midpoint's centreline height, then the junction height that gives it.
+            let mid_y = standover + ground - diameter / 2.0;
+            let junction_y = 2.0 * mid_y - top_front_y;
+            let rise = seat_vec.y / seat_axis_length;
+            let up_seat = (junction_y - points.seat_tube_at_crank_height.y) / rise;
+            let solved = seat_tube_length.0 - up_seat;
+            let min_below = t.junctions.min_seat_tube_below_junction;
+            if !(solved.is_finite() && solved >= 0.0) {
+                bad.push(format!(
+                    "Standover {standover:.1} puts the top tube above the top of the seat tube."
+                ));
+            } else if !(up_seat >= min_below) {
+                bad.push(format!(
+                    "Standover {standover:.1} puts the top tube less than {min_below:.1} mm up the seat tube."
+                ));
+            } else {
+                overhang = solved;
+                overhang_source = ValueSource::Solved;
+            }
+        }
+    }
     if [top_below, down_above, overhang]
         .iter()
         .any(|v| !(v.is_finite() && *v >= 0.0))
@@ -160,6 +207,88 @@ fn solve(
         }),
     };
     let down_end = on_outline(down_front, "down tube");
+
+    // A bent seat tube (B1–B3): with a BB shell, and the seat tube axis
+    // passing more than 1 mm from the crank centre.
+    let (bend_radius, bend_radius_source) = pick(
+        inputs.seat_tube_bend_radius,
+        t.junctions.seat_tube_bend_radius,
+    );
+    let shell_section = inputs
+        .sections
+        .get(&TubeKind::BottomBracketShell)
+        .copied()
+        .unwrap_or_default();
+    let shell_radius = pick(
+        shell_section.outside_diameter,
+        entry
+            .section(TubeKind::BottomBracketShell.key())
+            .unwrap_or([0.0, 0.0])[0],
+    )
+    .0 / 2.0;
+    let mut bend = None;
+    let mut seat_start = seat_base;
+    let mut reported_radius = bend_radius;
+    let mut seat_tube_insertion = seat_tube_length.0;
+    if drive_unit.is_none() && seat_axis_length > 0.0 {
+        let along = dot(sub(crank, seat_base), seat_axis);
+        let foot = add(seat_base, scale(seat_axis, along));
+        let off = sub(crank, foot);
+        let d = norm(off);
+        let top_along = seat_tube_length.0 - along;
+        if d <= BEND_TOLERANCE {
+            // Straight: the post goes down to the shell's outline.
+            let into_shell = (shell_radius * shell_radius - d * d).max(0.0).sqrt();
+            seat_tube_insertion = top_along - into_shell;
+        } else if !(bend_radius > 0.0) {
+            bad.push(format!(
+                "Seat tube bend radius {bend_radius:.1} must be positive."
+            ));
+        } else {
+            match seat_bend(
+                foot,
+                seat_axis,
+                scale(off, 1.0 / d),
+                d,
+                bend_radius,
+                shell_radius,
+            ) {
+                Some((lowest, lowest_start)) => {
+                    // B6: past vertical (leaning forward into the shell), the
+                    // bend moves up to enter the shell vertically.
+                    let vertical = (lowest_start.x > crank.x + 1e-9).then(|| {
+                        vertical_bend(seat_base, seat_axis, crank, bend_radius, shell_radius)
+                    });
+                    let (b, start) = match vertical {
+                        None => (lowest, lowest_start),
+                        Some(Some(found)) => found,
+                        Some(None) => {
+                            bad.push(format!(
+                                "The seat tube can't turn vertical above the BB shell with a {bend_radius:.1} mm bend radius."
+                            ));
+                            (lowest, lowest_start)
+                        }
+                    };
+                    let bend_radius = b.radius;
+                    let insertion = norm(sub(seat_tube_top, b.tangent));
+                    let to_junction = seat_tube_length.0 - overhang;
+                    let tangent_along = dot(sub(b.tangent, seat_base), seat_axis);
+                    if tangent_along >= to_junction {
+                        bad.push(format!(
+                            "The seat tube bend ({bend_radius:.1} mm radius) starts above the top tube junction."
+                        ));
+                    }
+                    seat_tube_insertion = insertion;
+                    seat_start = start;
+                    reported_radius = bend_radius;
+                    bend = Some(b);
+                }
+                None => bad.push(format!(
+                    "No seat tube bend of {bend_radius:.1} mm radius reaches the BB shell."
+                )),
+            }
+        }
+    }
     let chainstay_end = on_outline(points.rear_axle, "chainstay");
 
     let mut tubes = Vec::new();
@@ -174,13 +303,16 @@ fn solve(
             TubeKind::HeadTube => (points.head_tube_bottom, points.head_tube_top),
             TubeKind::TopTube => (top_front, seat_junction),
             TubeKind::DownTube => (down_front, down_end),
-            TubeKind::SeatTube => (seat_base, seat_tube_top),
+            TubeKind::SeatTube => (seat_start, seat_tube_top),
             TubeKind::Chainstay => (chainstay_end, points.rear_axle),
             TubeKind::Seatstay => (points.rear_axle, seat_junction),
             TubeKind::BottomBracketShell => (crank, crank),
         };
+        let bent = bend.filter(|_| kind == TubeKind::SeatTube);
         let length = if kind == TubeKind::BottomBracketShell {
             t.bottom_bracket_shell_width
+        } else if let Some(b) = bent {
+            norm(sub(end, b.tangent)) + b.radius * b.sweep + norm(sub(b.at(b.sweep), start))
         } else {
             norm(sub(end, start))
         };
@@ -208,9 +340,12 @@ fn solve(
             wall,
             count,
             mass,
-            centre_of_mass: scale(add(start, end), 0.5),
+            centre_of_mass: bent.map_or(scale(add(start, end), 0.5), |b| {
+                bent_centroid(&b, start, end)
+            }),
             diameter_source,
             wall_source,
+            bend: bent,
         });
     }
     if !bad_unit.is_empty() {
@@ -255,9 +390,13 @@ fn solve(
         seat_tube_length: seat_tube_length.0,
         seat_tube_length_source: seat_tube_length.1,
         seat_tube_overhang: overhang,
+        seat_tube_overhang_source: overhang_source,
         top_tube_below_head_tube_top: top_below,
         down_tube_above_head_tube_bottom: down_above,
         seat_tube_top,
+        seat_tube_bend_radius: reported_radius,
+        seat_tube_bend_radius_source: bend_radius_source,
+        seat_tube_insertion,
         tubes,
         fittings,
         frame_mass,
@@ -319,6 +458,122 @@ fn weighted(items: impl Iterator<Item = (f64, Point)>) -> Point {
     } else {
         Point::default()
     }
+}
+
+/// Within this distance of the crank centre, the seat tube axis counts as
+/// passing through it and the tube stays straight (B3).
+const BEND_TOLERANCE: f64 = 1.0;
+
+/// The bend that takes a seat tube from its axis to the BB shell (B1, B2):
+/// an arc of `radius`, tangent to the axis, ending on the shell (radius
+/// `shell`) with the tube aimed at the crank centre, placed as low as it can
+/// go. `foot` is the crank centre's foot on the axis, `up` the axis direction,
+/// `toward` the unit normal from the axis to the crank centre and `d` the
+/// distance. Returns the bend and the tube's start on the shell.
+///
+/// With the arc's centre O at `radius` from the axis on the crank's side, the
+/// tangent from the shell point through the crank centre C makes a right
+/// angle at the shell point, so |OC|² = radius² + shell². That fixes O's
+/// height above the foot: a² = shell² + 2·radius·d − d².
+fn seat_bend(
+    foot: Point,
+    up: Point,
+    toward: Point,
+    d: f64,
+    radius: f64,
+    shell: f64,
+) -> Option<(bike_model::Bend, Point)> {
+    let a2 = shell * shell + 2.0 * radius * d - d * d;
+    if !(a2 >= 0.0) {
+        return None;
+    }
+    let a = a2.sqrt();
+    let tangent = add(foot, scale(up, a));
+    let centre = add(tangent, scale(toward, radius));
+    // From the tangent point, the arc turns by φ where
+    // cos φ (radius − d) + sin φ a = radius.
+    let hyp = (radius * radius + shell * shell).sqrt();
+    let sweep = (a).atan2(radius - d) - (radius / hyp).acos();
+    if !(sweep > 0.0 && sweep < std::f64::consts::PI) {
+        return None;
+    }
+    let bend = bike_model::Bend {
+        tangent,
+        centre,
+        radius,
+        sweep,
+        down: scale(up, -1.0),
+    };
+    let start = bend.at(sweep);
+    Some((bend, start))
+}
+
+/// B6: the bend that turns the seat tube from its axis to the vertical
+/// through the crank centre, then runs straight down to the top of the shell.
+/// The arc is the fillet of `radius` between the two lines, so its place is
+/// fixed; `None` when it would end below the top of the shell (a larger
+/// radius only reaches lower). Returns the bend and the tube's start (the top
+/// of the shell).
+fn vertical_bend(
+    base: Point,
+    up: Point,
+    crank: Point,
+    radius: f64,
+    shell: f64,
+) -> Option<(bike_model::Bend, Point)> {
+    // Where the axis crosses the vertical through the crank.
+    let cross = add(base, scale(up, (crank.x - base.x) / up.x));
+    let down = scale(up, -1.0);
+    // The turn from `down` to straight down.
+    let turn = (-down.y).clamp(-1.0, 1.0).acos();
+    let top_of_shell = Point::new(crank.x, crank.y + shell);
+    let tangent_length = radius * (turn / 2.0).tan();
+    let tangent = add(cross, scale(up, tangent_length));
+    let low = Point::new(crank.x, cross.y - tangent_length);
+    if low.y < top_of_shell.y - 1e-9 {
+        return None;
+    }
+    // The centre is `radius` from the axis, on the vertical's side.
+    let mut n = Point::new(-up.y, up.x);
+    if dot(sub(low, tangent), n) < 0.0 {
+        n = scale(n, -1.0);
+    }
+    let centre = add(tangent, scale(n, radius));
+    let bend = bike_model::Bend {
+        tangent,
+        centre,
+        radius,
+        sweep: turn,
+        down,
+    };
+    Some((bend, top_of_shell))
+}
+
+/// The centre of mass of a bent tube's centreline: the straight section and
+/// the arc, weighted by length.
+fn bent_centroid(b: &bike_model::Bend, bottom: Point, top: Point) -> Point {
+    let straight = norm(sub(top, b.tangent));
+    let low = b.at(b.sweep);
+    let stub = norm(sub(low, bottom));
+    let arc = b.radius * b.sweep;
+    let half = b.sweep / 2.0;
+    // An arc's centroid lies on its bisector at R sin(h)/h from the centre.
+    let mid = b.at(half);
+    let k = if half > 1e-12 { half.sin() / half } else { 1.0 };
+    let arc_c = add(b.centre, scale(sub(mid, b.centre), k));
+    let total = straight + arc + stub;
+    let weighted = add(
+        add(
+            scale(scale(add(top, b.tangent), 0.5), straight),
+            scale(arc_c, arc),
+        ),
+        scale(scale(add(low, bottom), 0.5), stub),
+    );
+    scale(weighted, 1.0 / total)
+}
+
+fn dot(a: Point, b: Point) -> f64 {
+    a.x * b.x + a.y * b.y
 }
 
 fn norm(p: Point) -> f64 {

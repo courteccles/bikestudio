@@ -33,11 +33,15 @@ pub enum GeometryVariable {
     Wheelbase,
     /// Crank centre above the ground.
     BottomBracketHeight,
+    /// Crank centre to front axle, horizontal (S-EDIT-CENTERS E1).
+    FrontCentre,
+    /// Crank centre to rear axle, horizontal (E1).
+    RearCentre,
 }
 
 impl GeometryVariable {
     /// Every variable, in display order.
-    pub const ALL: [GeometryVariable; 10] = [
+    pub const ALL: [GeometryVariable; 12] = [
         GeometryVariable::HeadTubeAngle,
         GeometryVariable::EffectiveSeatTubeAngle,
         GeometryVariable::ActualSeatTubeAngle,
@@ -48,6 +52,8 @@ impl GeometryVariable {
         GeometryVariable::BottomBracketDrop,
         GeometryVariable::BottomBracketHeight,
         GeometryVariable::Wheelbase,
+        GeometryVariable::FrontCentre,
+        GeometryVariable::RearCentre,
     ];
 
     /// True for angles (degrees), false for lengths (millimetres).
@@ -68,11 +74,13 @@ impl GeometryVariable {
             GeometryVariable::HeadTubeAngle => "Head angle",
             GeometryVariable::HeadTubeLength => "Head tube length",
             GeometryVariable::EffectiveSeatTubeAngle => "Effective seat angle",
-            GeometryVariable::ActualSeatTubeAngle => "Actual seat angle",
+            GeometryVariable::ActualSeatTubeAngle => "Seat tube angle",
             GeometryVariable::BottomBracketDrop => "BB drop",
             GeometryVariable::ChainstayLength => "Chainstay",
             GeometryVariable::Wheelbase => "Wheelbase",
             GeometryVariable::BottomBracketHeight => "BB height",
+            GeometryVariable::FrontCentre => "Front center",
+            GeometryVariable::RearCentre => "Rear center",
         }
     }
 }

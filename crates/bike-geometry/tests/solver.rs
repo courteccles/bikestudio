@@ -360,3 +360,51 @@ proptest! {
         }
     }
 }
+
+/// S-EDIT-CENTERS E1: front and rear center pin like any other variable.
+#[test]
+fn front_and_rear_center_pin_and_solve_the_rest() {
+    let base = solve_geometry(&hardtail(), &defaults())
+        .0
+        .unwrap()
+        .static_state;
+    let mut p = hardtail();
+    p.geometry.free(V::Reach);
+    p.geometry.free(V::ChainstayLength);
+    p.geometry.pin(V::FrontCentre, base.value(V::FrontCentre));
+    p.geometry.pin(V::RearCentre, base.value(V::RearCentre));
+    let (solved, diagnostics) = solve_geometry(&p, &defaults());
+    assert!(!has(&diagnostics, "geometry.conflict"), "{diagnostics:?}");
+    let g = solved.unwrap();
+    let s = &g.static_state;
+    for v in [V::Reach, V::ChainstayLength, V::Wheelbase] {
+        assert!((s.value(v) - base.value(v)).abs() < 1e-6, "{v:?}");
+    }
+    assert_eq!(g.sources[&V::Reach], ValueSource::Solved);
+    assert_eq!(g.sources[&V::ChainstayLength], ValueSource::Solved);
+    assert!((s.front_centre - s.value(V::FrontCentre)).abs() < 1e-9);
+    assert!((s.rear_centre - s.value(V::RearCentre)).abs() < 1e-9);
+}
+
+#[test]
+fn chainstay_rear_center_and_bb_drop_can_conflict() {
+    let mut p = hardtail();
+    let s = solve_geometry(&p, &defaults()).0.unwrap().static_state;
+    p.geometry.pin(V::RearCentre, s.value(V::RearCentre) - 5.0);
+    let (solved, diagnostics) = solve_geometry(&p, &defaults());
+    assert!(solved.is_some());
+    let conflict = diagnostics
+        .iter()
+        .find(|d| d.code == "geometry.conflict")
+        .expect("a conflict");
+    for name in ["chainstay", "BB drop", "rear center"] {
+        assert!(
+            conflict
+                .message
+                .to_lowercase()
+                .contains(&name.to_lowercase()),
+            "{}",
+            conflict.message
+        );
+    }
+}

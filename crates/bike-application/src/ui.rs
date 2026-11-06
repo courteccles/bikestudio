@@ -92,7 +92,13 @@ pub fn apply_theme(cx: &mut App) {
 /// A segmented control in the style of the Specification / Linkage /
 /// Analysis bar: a rounded strip holding small buttons.
 fn segmented() -> Div {
-    h_flex().gap_1().p_0p5().rounded_md().bg(palette::strip())
+    h_flex()
+        .gap_1()
+        .p_0p5()
+        .rounded_md()
+        .bg(palette::strip())
+        .border_1()
+        .border_color(palette::border())
 }
 
 /// One segment: filled when selected, ghost otherwise.
@@ -150,7 +156,7 @@ mod palette {
     }
     /// Full-width dividers under the panel heading and the tray tabs.
     pub fn divider() -> Hsla {
-        hex(0x262626)
+        hex(0x3a3c3f)
     }
     /// Popup menus.
     pub fn popover() -> Hsla {
@@ -158,7 +164,7 @@ mod palette {
     }
     /// The strip behind a segmented control.
     pub fn strip() -> Hsla {
-        hex(0x191b1d)
+        hex(0x202326)
     }
     /// A selected segment.
     pub fn selected() -> Hsla {
@@ -172,7 +178,7 @@ mod palette {
         hex(0x121416)
     }
     pub fn border() -> Hsla {
-        hex(0x232527)
+        hex(0x45484c)
     }
     pub fn text() -> Hsla {
         hex(0xeaeaec)
@@ -252,10 +258,17 @@ mod palette {
                 1.2,
                 Some(hsla(30. / 360., 0.2, 0.2, 0.9)),
             ),
-            Ghost => (hsla(210. / 360., 0.3, 0.5, 0.35), 1.0, None),
-            Centreline => (hsla(0., 0., 0.42, 0.8), 0.8, None),
+            // A solid dot in the dimension colour.
+            Saddle => (accent(), 1.0, Some(accent())),
+            SeatLine => (accent().opacity(0.8), 3.0, None),
+            Crank => (
+                hsla(0., 0., 0.7, 1.0),
+                1.0,
+                Some(hsla(220. / 360., 0.06, 0.3, 0.95)),
+            ),
+            Ghost | CrankGhost => (hsla(210. / 360., 0.3, 0.5, 0.35), 1.0, None),
             Dimension => (accent(), 1.0, None),
-            Extension => (accent().opacity(0.45), 0.8, None),
+            Extension => (accent().opacity(0.45), 1.1, None),
             Origin => (accent(), 1.5, None),
         }
     }
@@ -277,6 +290,8 @@ pub struct Studio {
     tray: Tray,
     /// A typed value that didn't parse, or a file error.
     message: Option<String>,
+    /// A field whose typed text isn't allowed (outlined red).
+    invalid: Option<Field>,
     focus: FocusHandle,
     _subscriptions: Vec<Subscription>,
 }
@@ -305,6 +320,7 @@ impl Studio {
             drag_from: None,
             tray: Tray::Diagnostics,
             message: None,
+            invalid: None,
             focus: cx.focus_handle(),
             _subscriptions: Vec::new(),
         };
@@ -321,6 +337,27 @@ impl Studio {
     // ----- Commands and refresh -----
 
     fn apply(&mut self, command: Command, window: &mut Window, cx: &mut Context<Self>) {
+        self.apply_to(None, command, window, cx);
+    }
+
+    /// Applies a command from `field` (if any). One that would break a model
+    /// that solves now (a cleared or freed value whose default clashes) is
+    /// refused: the reason goes in the diagnostics and the field is outlined.
+    fn apply_to(
+        &mut self,
+        field: Option<Field>,
+        command: Command,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if let Some(why) = self.doc.would_break(&command, &self.data) {
+            self.doc.flag("edit.refused", why);
+            self.invalid = field;
+            self.refresh(window, cx);
+            return;
+        }
+        // The next command clears a blocked value's error and outline.
+        self.invalid = None;
         self.doc.apply(command);
         self.refresh(window, cx);
     }
@@ -394,6 +431,27 @@ impl Studio {
                 self.select_all_later(input, window, cx);
                 self.redraw(cx);
             }
+            InputEvent::Change => {
+                // Outline the field red while its text isn't allowed. Text put
+                // back to the shown value (after a block) keeps the outline
+                // until the next command clears it.
+                let text = input.read(cx).value().to_string();
+                let Some(view) = self.views.iter().find(|v| v.field == field) else {
+                    return;
+                };
+                let bad = panel::not_allowed(&self.doc, view, &text, self.settings.display_unit);
+                let invalid = if bad.is_some() {
+                    Some(field)
+                } else if text.trim() == view.text.trim() {
+                    self.invalid
+                } else {
+                    None
+                };
+                if self.invalid != invalid {
+                    self.invalid = invalid;
+                    cx.notify();
+                }
+            }
             InputEvent::Blur | InputEvent::PressEnter { .. } => {
                 if matches!(event, InputEvent::Blur) && self.focused == Some(field) {
                     self.focused = None;
@@ -401,7 +459,6 @@ impl Studio {
                 let text = input.read(cx).value().to_string();
                 self.commit(field, &text, window, cx);
             }
-            _ => {}
         }
     }
 
@@ -438,9 +495,22 @@ impl Studio {
         let Some(next) = panel::step(&view, &text, up, big, self.settings.display_unit) else {
             return;
         };
+        // A step past a limit doesn't happen.
+        if let Some(why) = panel::not_allowed(&self.doc, &view, &next, self.settings.display_unit) {
+            self.block(field, why, window, cx);
+            return;
+        }
         self.refresh_input(field, &next, window, cx);
         self.commit(field, &next, window, cx);
         self.select_all_later(&input, window, cx);
+    }
+
+    /// Blocks a value that isn't allowed: its reason goes in the
+    /// diagnostics and the field stays outlined red until the next command.
+    fn block(&mut self, field: Field, why: String, window: &mut Window, cx: &mut Context<Self>) {
+        self.doc.flag_limit(why);
+        self.invalid = Some(field);
+        self.refresh(window, cx);
     }
 
     /// Commits `text` to a panel field, as Enter or leaving the field does.
@@ -454,10 +524,20 @@ impl Studio {
         let Some(view) = self.views.iter().find(|v| v.field == field).cloned() else {
             return;
         };
+        // A value that isn't allowed is blocked: the field goes back.
+        if let Some(why) = panel::not_allowed(&self.doc, &view, text, self.settings.display_unit) {
+            self.refresh_input(field, &view.text, window, cx);
+            self.block(field, why, window, cx);
+            return;
+        }
         match panel::commit(&self.doc, &view, text, self.settings.display_unit) {
             Ok(Some(command)) => {
                 self.message = None;
-                self.apply(command, window, cx);
+                // Refused, the field shows its value again.
+                if self.doc.would_break(&command, &self.data).is_some() {
+                    self.refresh_input(field, &view.text, window, cx);
+                }
+                self.apply_to(Some(field), command, window, cx);
             }
             // Nothing changed: tidy the field's text and redraw, without a solve.
             Ok(None) => {
@@ -889,7 +969,12 @@ impl Studio {
             )
     }
 
-    fn render_field(&self, view: &FieldView, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_field(&self, view: &FieldView, cx: &mut Context<Self>) -> Div {
+        self.render_row(view, ROW_HEIGHT, cx)
+    }
+
+    /// A field's row, `height` tall; its input is centred in it.
+    fn render_row(&self, view: &FieldView, height: Pixels, cx: &mut Context<Self>) -> Div {
         let field = view.field;
         let input = self.inputs.get(&field).cloned();
         let lock = view.locked.map(|locked| {
@@ -905,7 +990,7 @@ impl Studio {
                 })
                 .on_click(cx.listener(move |this, _, window, cx| {
                     if let Some(command) = panel::toggle_lock(&this.doc, field) {
-                        this.apply(command, window, cx);
+                        this.apply_to(Some(field), command, window, cx);
                     }
                 }))
         });
@@ -915,6 +1000,7 @@ impl Studio {
             view.unit.to_string()
         };
         let read_only = view.read_only;
+        let invalid = self.invalid == Some(field);
         let value = if read_only {
             div()
                 .flex_1()
@@ -945,6 +1031,9 @@ impl Studio {
                         Input::new(&input)
                             .small()
                             .bg(palette::input())
+                            .when(invalid, |i| {
+                                i.border_color(palette::error()).focus_bordered(false)
+                            })
                             .suffix(div().text_xs().text_color(palette::muted()).child(suffix)),
                     )
                 })
@@ -954,7 +1043,7 @@ impl Studio {
             .pl(ROW_INDENT)
             .gap_2()
             .items_center()
-            .h(px(32.0))
+            .h(height)
             .child(
                 div()
                     .w(px(16.0))
@@ -1060,14 +1149,54 @@ impl Studio {
     }
 
     fn render_panel(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        // Rows that share a group (head tube, seat tube, bottom bracket, fork, cranks)
+        // are drawn together in one outlined box.
         let section = |s: Section, this: &Self, cx: &mut Context<Self>| {
-            v_flex().children(
-                this.views
-                    .iter()
-                    .filter(|v| v.section == s)
-                    .map(|v| this.render_field(v, cx).into_any_element())
-                    .collect::<Vec<_>>(),
-            )
+            let views: Vec<&FieldView> = this.views.iter().filter(|v| v.section == s).collect();
+            let mut children = Vec::new();
+            let mut i = 0;
+            while i < views.len() {
+                let Some(group) = views[i].field.group() else {
+                    children.push(this.render_field(views[i], cx).into_any_element());
+                    i += 1;
+                    continue;
+                };
+                let mut rows = Vec::new();
+                while i < views.len() && views[i].field.group() == Some(group) {
+                    rows.push(
+                        this.render_row(views[i], INPUT_HEIGHT, cx)
+                            .into_any_element(),
+                    );
+                    i += 1;
+                }
+                children.push(
+                    v_flex()
+                        .my_1()
+                        // GROUP_PAD on every side: rows inside are only as tall as
+                        // their inputs, with GROUP_PAD between them, so the gaps are
+                        // exact. Labels and inputs stay in line with the rows outside.
+                        .ml(ROW_INDENT - GROUP_PAD - px(1.0))
+                        .mr(-(GROUP_PAD + px(1.0)))
+                        .p(GROUP_PAD)
+                        .gap(GROUP_PAD)
+                        .rounded_md()
+                        .border_1()
+                        .border_color(palette::divider())
+                        .child(
+                            div()
+                                // The same size as the field labels.
+                                .text_sm()
+                                // No leading above or below, so the padding is all space.
+                                .line_height(px(14.0))
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .text_color(palette::label())
+                                .child(panel::group_title(group)),
+                        )
+                        .child(v_flex().ml(-ROW_INDENT).gap(GROUP_PAD).children(rows))
+                        .into_any_element(),
+                );
+            }
+            v_flex().children(children)
         };
         v_flex()
             .id("panel")
@@ -1104,8 +1233,6 @@ impl Studio {
             .child(section(Section::Travel, self, cx))
             .child(section_title(Section::Geometry.label()))
             .child(section(Section::Geometry, self, cx))
-            .child(section_title(Section::Cranks.label()))
-            .child(section(Section::Cranks, self, cx))
     }
 
     fn render_tray(&self, cx: &mut Context<Self>) -> impl IntoElement {
@@ -1294,6 +1421,11 @@ impl Render for Studio {
 
 /// Rows sit this far in from their section title.
 const ROW_INDENT: Pixels = px(12.0);
+/// Space between a group's box and the header, labels and inputs inside it.
+const GROUP_PAD: Pixels = px(8.0);
+/// A row in the panel, and the small input inside it (gpui-component `h_6`).
+const ROW_HEIGHT: Pixels = px(32.0);
+const INPUT_HEIGHT: Pixels = px(24.0);
 const CARD_GAP: Pixels = px(16.0);
 /// Spacing from the mockups: the grid window is inset from the window's left
 /// and right edges and runs from the top bar to the status bar.
@@ -1373,8 +1505,9 @@ fn stroke(window: &mut Window, width: f32, colour: Hsla, f: impl FnOnce(&mut Pat
 
 /// Short dashes along a screen-space line, the same size at any zoom.
 fn paint_dotted(a: Point<Pixels>, b: Point<Pixels>, width: f32, colour: Hsla, window: &mut Window) {
-    const ON: f32 = 3.0;
-    const OFF: f32 = 3.0;
+    // Thicker lines get longer dashes, so they still read as dashes.
+    let on = (width * 5.0).max(6.0);
+    let off = on;
     let (dx, dy) = (f32::from(b.x - a.x), f32::from(b.y - a.y));
     let length = dx.hypot(dy);
     if length < 1.0 {
@@ -1386,10 +1519,23 @@ fn paint_dotted(a: Point<Pixels>, b: Point<Pixels>, width: f32, colour: Hsla, wi
         let mut t = 0.0;
         while t < length {
             p.move_to(at(t));
-            p.line_to(at((t + ON).min(length)));
-            t += ON + OFF;
+            p.line_to(at((t + on).min(length)));
+            t += on + off;
         }
     });
+}
+
+/// `top` laid over `bottom`, as one opaque colour.
+fn over(top: Hsla, bottom: Hsla) -> Hsla {
+    let (t, b): (Rgba, Rgba) = (top.into(), bottom.into());
+    let a = t.a;
+    Rgba {
+        r: t.r * a + b.r * (1.0 - a),
+        g: t.g * a + b.g * (1.0 - a),
+        b: t.b * a + b.b * (1.0 - a),
+        a: 1.0,
+    }
+    .into()
 }
 
 fn fill_polygon(window: &mut Window, points: &[Point<Pixels>], colour: Hsla) {
@@ -1510,14 +1656,15 @@ fn paint_view(
         let dim = |c: Hsla| if stale { c.opacity(c.a * 0.35) } else { c };
         for item in &scene.items {
             let (colour, hairline, shade) = palette::role(item.role);
-            let (colour, shade) = (dim(colour), shade.map(dim));
+            // Fills are solid, so nothing behind a shape shows through it.
+            let (colour, shade) = (dim(colour), shade.map(|c| dim(over(c, palette::view()))));
             match &item.shape {
                 Shape::Line { a, b, width } => {
                     if item.role == Role::Ground {
                         paint_ground(m.map(*a).y, bounds, colour, window);
                         continue;
                     }
-                    if item.role == Role::Extension {
+                    if matches!(item.role, Role::Extension | Role::SeatLine) {
                         paint_dotted(m.map(*a), m.map(*b), hairline, colour, window);
                         continue;
                     }
@@ -1526,6 +1673,33 @@ fn paint_view(
                         p.move_to(m.map(*a));
                         p.line_to(m.map(*b));
                     });
+                }
+                Shape::Segments(segments) => {
+                    stroke(window, hairline, colour, |p| {
+                        for (a, b) in segments {
+                            p.move_to(m.map(*a));
+                            p.line_to(m.map(*b));
+                        }
+                    });
+                }
+                Shape::Union(parts) => {
+                    // Outlines first at twice the width, then every fill over
+                    // them, opaque: the fills hide the seams inside, leaving
+                    // the outer half of the outline round the whole piece.
+                    let parts: Vec<Vec<_>> = parts
+                        .iter()
+                        .map(|p| p.iter().map(|q| m.map(*q)).collect())
+                        .collect();
+                    for points in &parts {
+                        stroke(window, hairline * 2.0, colour, |p| {
+                            p.add_polygon(points, true)
+                        });
+                    }
+                    if let Some(shade) = shade {
+                        for points in &parts {
+                            fill_polygon(window, points, shade);
+                        }
+                    }
                 }
                 Shape::Polygon(points) => {
                     let points: Vec<_> = points.iter().map(|p| m.map(*p)).collect();

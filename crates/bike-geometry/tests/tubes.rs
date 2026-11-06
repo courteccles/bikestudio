@@ -355,3 +355,185 @@ proptest! {
         }
     }
 }
+
+fn standover(t: &SolvedTubes, ground: f64) -> f64 {
+    let top = t.tube(TubeKind::TopTube).unwrap();
+    (top.start.y + top.end.y) / 2.0 + top.outside_diameter / 2.0 - ground
+}
+
+/// S-EDIT-CENTERS E2: a pinned standover moves the seat tube junction only.
+#[test]
+fn pinned_standover_moves_the_seat_tube_junction() {
+    let d = defaults();
+    let base = rigid();
+    let ground = solve_geometry(&base, &d)
+        .0
+        .unwrap()
+        .static_state
+        .points
+        .rear_contact
+        .y;
+    let before = solve(&base).0.unwrap();
+    let mut p = base.clone();
+    p.tubes.junctions.seat_tube_overhang = None;
+    p.tubes.standover = Parameter::Pinned(standover(&before, ground) - 20.0);
+    let (after, diagnostics) = solve(&p);
+    let after = after.unwrap_or_else(|| panic!("{diagnostics:?}"));
+    assert!((standover(&after, ground) - (standover(&before, ground) - 20.0)).abs() < 0.1);
+    assert_eq!(after.seat_tube_length, 500.0);
+    assert_eq!(after.seat_tube_overhang_source, ValueSource::Solved);
+    assert!(after.seat_tube_overhang > 50.0);
+    let (b, a) = (
+        before.tube(TubeKind::TopTube).unwrap(),
+        after.tube(TubeKind::TopTube).unwrap(),
+    );
+    assert!(close(a.start, b.start, EPS), "front junction stays");
+    assert!(a.length != b.length);
+    assert_eq!(
+        after.tube(TubeKind::SeatTube).unwrap().length,
+        before.tube(TubeKind::SeatTube).unwrap().length
+    );
+
+    // With the overhang set too: a conflict.
+    let mut both = p.clone();
+    both.tubes.junctions.seat_tube_overhang = Some(Millimeters(50.0));
+    assert!(has(&solve(&both).1, "geometry.conflict"));
+
+    // Above the seat tube, or too low on it: impossible.
+    for delta in [400.0, -600.0] {
+        let mut out = p.clone();
+        out.tubes.standover = Parameter::Pinned(standover(&before, ground) + delta);
+        let (t, diagnostics) = solve(&out);
+        assert!(
+            t.is_none() && has(&diagnostics, "tubes.impossible"),
+            "{delta} {diagnostics:?}"
+        );
+    }
+}
+
+/// The rigid frame with its actual seat angle slacker than the effective, so
+/// the seat tube axis passes in front of the crank centre. A gentle bend, so
+/// the lowest bend doesn't lean past vertical (B6).
+fn offset_seat() -> Project {
+    let mut p = rigid();
+    p.geometry.pin(V::EffectiveSeatTubeAngle, 75.0);
+    p.geometry.pin(V::ActualSeatTubeAngle, 74.0);
+    p.tubes.seat_tube_bend_radius = Some(Millimeters(OFFSET_RADIUS));
+    p
+}
+
+const OFFSET_RADIUS: f64 = 400.0;
+
+/// S-TUBES B1–B4: a bent seat tube leaves its axis tangentially, ends on the
+/// BB shell aimed at the crank centre, and keeps its chart length.
+#[test]
+fn offset_seat_tube_bends_to_the_shell() {
+    let (t, diagnostics) = solve(&offset_seat());
+    let t = t.unwrap_or_else(|| panic!("{diagnostics:?}"));
+    let seat = t.tube(TubeKind::SeatTube).unwrap();
+    let shell = t.tube(TubeKind::BottomBracketShell).unwrap();
+    let b = seat.bend.expect("bent");
+    let r = shell.outside_diameter / 2.0;
+    let crank = shell.start;
+    let dist = |a: Point, c: Point| (a.x - c.x).hypot(a.y - c.y);
+
+    // B1: on the arc, starting on the shell, aimed at the crank centre.
+    assert!((dist(seat.start, b.centre) - b.radius).abs() < EPS);
+    assert!((dist(seat.start, crank) - r).abs() < EPS);
+    let radial = (seat.start.x - b.centre.x, seat.start.y - b.centre.y);
+    let to_crank = (crank.x - seat.start.x, crank.y - seat.start.y);
+    assert!(
+        (radial.0 * to_crank.0 + radial.1 * to_crank.1).abs() < 1e-6,
+        "tangent hits the crank"
+    );
+    // Tangent to the axis at the bend: the straight section runs along it.
+    let up = (
+        t.seat_tube_top.x - b.tangent.x,
+        t.seat_tube_top.y - b.tangent.y,
+    );
+    let rad_t = (b.tangent.x - b.centre.x, b.tangent.y - b.centre.y);
+    assert!((up.0 * rad_t.0 + up.1 * rad_t.1).abs() < 1e-6);
+    assert!((dist(b.tangent, b.centre) - b.radius).abs() < EPS);
+
+    // Not past vertical, so it isn't moved up (B6).
+    assert!(seat.start.x <= crank.x, "{:?}", seat.start);
+    // B2: the radius asked for, and insertion is the straight section.
+    assert_eq!(b.radius, OFFSET_RADIUS);
+    assert_eq!(t.seat_tube_bend_radius_source, ValueSource::Pinned);
+    assert!((t.seat_tube_insertion - dist(t.seat_tube_top, b.tangent)).abs() < EPS);
+    // B4: chart length unchanged; mass length runs along the arc.
+    assert_eq!(t.seat_tube_length, 500.0);
+    let expected = dist(t.seat_tube_top, b.tangent) + b.radius * b.sweep;
+    assert!((seat.length - expected).abs() < EPS);
+
+    // A gentler bend starts higher, leaving less insertion.
+    let mut gentle = offset_seat();
+    gentle.tubes.seat_tube_bend_radius = Some(Millimeters(2.0 * OFFSET_RADIUS));
+    let g = solve(&gentle).0.unwrap();
+    assert!(g.seat_tube_insertion < t.seat_tube_insertion);
+}
+
+/// B3: aligned within 1 mm, the seat tube stays straight; a bend that would
+/// start above the top tube junction is impossible.
+#[test]
+fn aligned_seat_tube_stays_straight_and_huge_bends_are_impossible() {
+    let t = solve(&rigid()).0.unwrap();
+    assert!(t.tube(TubeKind::SeatTube).unwrap().bend.is_none());
+
+    let mut huge = offset_seat();
+    huge.tubes.seat_tube_bend_radius = Some(Millimeters(100_000.0));
+    let (t, diagnostics) = solve(&huge);
+    assert!(
+        t.is_none() && has(&diagnostics, "tubes.impossible"),
+        "{diagnostics:?}"
+    );
+}
+
+/// B6: actual seat angle slacker than the effective puts the axis in front of
+/// the crank; the lowest bend would lean past vertical into the shell, so the
+/// bend moves up and the tube enters the shell vertically, at its top.
+#[test]
+fn seat_tube_never_enters_the_shell_past_vertical() {
+    let mut p = rigid();
+    p.geometry.pin(V::EffectiveSeatTubeAngle, 78.0);
+    p.geometry.pin(V::ActualSeatTubeAngle, 74.0);
+    let (t, diagnostics) = solve(&p);
+    let t = t.unwrap_or_else(|| panic!("{diagnostics:?}"));
+    let seat = t.tube(TubeKind::SeatTube).unwrap();
+    let shell = t.tube(TubeKind::BottomBracketShell).unwrap();
+    let b = seat.bend.expect("bent");
+    let crank = shell.start;
+    let top_of_shell = Point::new(crank.x, crank.y + shell.outside_diameter / 2.0);
+    assert!(close(seat.start, top_of_shell, EPS), "{:?}", seat.start);
+    // The arc ends on the vertical through the crank, heading straight down.
+    let low = b.at(b.sweep);
+    assert!((low.x - crank.x).abs() < EPS && low.y >= top_of_shell.y);
+    let radial = (low.x - b.centre.x, low.y - b.centre.y);
+    assert!(radial.1.abs() < 1e-6, "vertical at the arc's end");
+    assert_eq!(b.radius, t.seat_tube_bend_radius);
+    // Length includes the vertical straight.
+    let dist = |a: Point, c: Point| (a.x - c.x).hypot(a.y - c.y);
+    let expected = dist(t.seat_tube_top, b.tangent) + b.radius * b.sweep + dist(low, seat.start);
+    assert!((seat.length - expected).abs() < EPS);
+
+    // A radius whose fillet would reach below the shell: impossible.
+    p.tubes.seat_tube_bend_radius = Some(Millimeters(5000.0));
+    let (t, diagnostics) = solve(&p);
+    assert!(
+        t.is_none() && has(&diagnostics, "tubes.impossible"),
+        "{diagnostics:?}"
+    );
+}
+
+/// The seat tube can only bend back to the BB: an actual seat angle steeper
+/// than the effective is a geometry error.
+#[test]
+fn actual_seat_angle_cant_be_steeper_than_effective() {
+    let mut p = rigid();
+    p.geometry.pin(V::ActualSeatTubeAngle, 74.5);
+    let d = defaults();
+    let (geometry, diagnostics) = solve_geometry(&p, &d);
+    assert!(geometry.is_none() && has(&diagnostics, "geometry.impossible"));
+    p.geometry.pin(V::ActualSeatTubeAngle, 74.0);
+    assert!(solve_geometry(&p, &d).0.is_some(), "equal is fine");
+}

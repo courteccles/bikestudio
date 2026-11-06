@@ -126,6 +126,9 @@ pub struct JunctionDefaults {
     pub seat_tube_overhang: f64,
     /// The seat tube must reach at least this far below its junction (T2).
     pub min_seat_tube_below_junction: f64,
+    /// Minimum centreline bend radius of a bent seat tube (S-TUBES B2).
+    pub seat_tube_bend_radius: f64,
+    pub seat_tube_bend_radius_source: String,
     pub source: String,
 }
 
@@ -390,6 +393,8 @@ impl Defaults {
         .iter()
         .any(|v| !(*v >= 0.0))
             || j.source.trim().is_empty()
+            || !(j.seat_tube_bend_radius > 0.0)
+            || j.seat_tube_bend_radius_source.trim().is_empty()
             || !(t.bottom_bracket_shell_width > 0.0)
             || t.bottom_bracket_shell_source.trim().is_empty()
         {

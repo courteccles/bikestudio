@@ -146,6 +146,14 @@ pub struct TubeInputs {
     pub seat_tube_length: Parameter,
     #[serde(default)]
     pub junctions: JunctionOffsets,
+    /// Top of the top tube above the ground at its midpoint. Pinned, it moves
+    /// the top tube's seat tube junction (S-EDIT-CENTERS E2).
+    #[serde(default)]
+    pub standover: Parameter,
+    /// Minimum bend radius of a bent seat tube, along its centreline (S-TUBES
+    /// B2); `None` uses the default.
+    #[serde(default)]
+    pub seat_tube_bend_radius: Option<Millimeters>,
     /// Per-tube overrides; tubes not listed use the material's defaults.
     #[serde(default)]
     pub sections: BTreeMap<TubeKind, TubeSection>,

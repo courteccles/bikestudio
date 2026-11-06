@@ -147,6 +147,38 @@ pub struct Tube {
     /// `Pinned` when the project overrides it, else `Default`.
     pub diameter_source: ValueSource,
     pub wall_source: ValueSource,
+    /// A bent seat tube's arc (S-TUBES B1); `None` for a straight tube. The
+    /// tube then runs from `start` (on the BB shell) along the arc to
+    /// `bend.tangent`, then straight to `end`.
+    pub bend: Option<Bend>,
+}
+
+/// A circular arc in a tube's centreline (S-TUBES B1).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Bend {
+    /// Where the straight upper section meets the arc.
+    pub tangent: Point,
+    pub centre: Point,
+    pub radius: f64,
+    /// Radians turned from `tangent` to the tube's start, always positive.
+    pub sweep: f64,
+    /// Unit direction of the tube at `tangent`, heading down the arc.
+    pub down: Point,
+}
+
+impl Bend {
+    /// The point `angle` radians along the arc from `tangent`.
+    pub fn at(&self, angle: f64) -> Point {
+        let r = Point::new(
+            (self.tangent.x - self.centre.x) / self.radius,
+            (self.tangent.y - self.centre.y) / self.radius,
+        );
+        let (s, c) = angle.sin_cos();
+        Point::new(
+            self.centre.x + self.radius * (c * r.x + s * self.down.x),
+            self.centre.y + self.radius * (c * r.y + s * self.down.y),
+        )
+    }
 }
 
 /// A fittings allowance (dropouts, bosses, welds) placed at a fixed point (T5).
@@ -166,9 +198,17 @@ pub struct SolvedTubes {
     pub seat_tube_length: f64,
     pub seat_tube_length_source: ValueSource,
     pub seat_tube_overhang: f64,
+    /// Solved when it comes from a pinned standover.
+    pub seat_tube_overhang_source: ValueSource,
     pub top_tube_below_head_tube_top: f64,
     pub down_tube_above_head_tube_bottom: f64,
     pub seat_tube_top: Point,
+    /// The bent seat tube's bend radius (S-TUBES B2), and where it came from.
+    pub seat_tube_bend_radius: f64,
+    pub seat_tube_bend_radius_source: ValueSource,
+    /// Seatpost insertion: the straight length down from the seat tube top,
+    /// to where the bend starts or, for a straight tube, to the BB shell (B2).
+    pub seat_tube_insertion: f64,
     pub tubes: Vec<Tube>,
     pub fittings: Vec<TubeFitting>,
     /// Grams: tubes plus fittings.

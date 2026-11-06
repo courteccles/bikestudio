@@ -12,6 +12,8 @@ down_tube_above_head_tube_bottom = 35.0
 seat_tube_overhang = 60.0
 min_seat_tube_below_junction = 50.0
 source = "S-TUBES T3. Seat tube overhang from the Nicolai Argon GTB GPI 2025 sizes M to XXL (60 mm)."
+seat_tube_bend_radius = 76.2
+seat_tube_bend_radius_source = "3 inch centreline radius, the tight bent seat tube Peter Verdone (frame builder) makes: https://www.peterverdone.com/?p=14176. One builder's figure, used for every material until per-material figures are found."
 
 [materials.steel]
 density = 7.85

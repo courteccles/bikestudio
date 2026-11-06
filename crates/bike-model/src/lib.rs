@@ -22,8 +22,8 @@ pub use geometry::{
 };
 pub use project::{CURRENT_SCHEMA_VERSION, LoadError, Project, WheelSize};
 pub use solved::{
-    Diagnostic, FramePoints, GeometryState, Point, Severity, Solved, SolvedGeometry, SolvedTubes,
-    Tube, TubeFitting, ValueSource,
+    Bend, Diagnostic, FramePoints, GeometryState, Point, Severity, Solved, SolvedGeometry,
+    SolvedTubes, Tube, TubeFitting, ValueSource,
 };
 pub use tubes::{JunctionOffsets, Material, TubeInputs, TubeKind, TubeSection};
 pub use units::{

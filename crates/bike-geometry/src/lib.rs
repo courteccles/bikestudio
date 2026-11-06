@@ -1,15 +1,17 @@
 //! The geometry solver (S-GEOM).
 //!
-//! With the wheel sizes and fork known, eight frame variables are tied together
-//! by three equations, leaving five free. The two seat angles are independent:
+//! With the wheel sizes and fork known, ten frame variables are tied together
+//! by five equations, leaving five free. The two seat angles are independent:
 //!
 //! 1. BB height = average wheel radius − BB drop (G8).
 //! 2. The fork, hanging from the head tube, puts the front axle at its wheel's
 //!    radius above the ground.
-//! 3. Wheelbase = rear centre + front centre.
+//! 3. (a) Chainstay² = rear centre² + rear axle height² (S-EDIT-CENTERS E1).
+//!    (b) Front centre = the front axle's horizontal distance ahead of the crank.
+//!    (c) Wheelbase = rear centre + front centre.
 //!
 //! For each equation the solver picks one free variable to calculate (G5),
-//! fills the other free variables from defaults (G12), solves the three
+//! fills the other free variables from defaults (G12), solves the five
 //! equations together with Newton's method, and checks any equation left with
 //! nothing free against the 1 mm tolerance (G6). It never panics (G7).
 //!
@@ -36,8 +38,8 @@ pub const CONFLICT_TOLERANCE_MM: f64 = 1.0;
 const EQUATION_TOLERANCE: f64 = 1e-9;
 const MAX_ITERATIONS: usize = 100;
 
-/// The variables tied together by the three equations.
-const EQUATION_VARIABLES: [V; 8] = [
+/// The variables tied together by the equations.
+const EQUATION_VARIABLES: [V; 10] = [
     V::Stack,
     V::Reach,
     V::HeadTubeAngle,
@@ -46,12 +48,14 @@ const EQUATION_VARIABLES: [V; 8] = [
     V::ChainstayLength,
     V::Wheelbase,
     V::BottomBracketHeight,
+    V::FrontCentre,
+    V::RearCentre,
 ];
 
 /// For each equation, the order in which free variables are chosen to solve it:
 /// the G5 order, then any other variable in the equation, so a default never
 /// causes a false conflict.
-const SOLVE_ORDER: [&[V]; 3] = [
+const SOLVE_ORDER: [&[V]; 5] = [
     &[V::BottomBracketHeight, V::BottomBracketDrop],
     &[
         V::HeadTubeLength,
@@ -60,12 +64,29 @@ const SOLVE_ORDER: [&[V]; 3] = [
         V::BottomBracketDrop,
     ],
     &[
+        V::RearCentre,
+        V::ChainstayLength,
+        V::BottomBracketHeight,
+        V::BottomBracketDrop,
+    ],
+    &[
+        V::FrontCentre,
+        V::Reach,
+        V::Stack,
+        V::HeadTubeAngle,
+        V::HeadTubeLength,
+        V::BottomBracketDrop,
+    ],
+    &[
         V::Wheelbase,
+        V::FrontCentre,
+        V::RearCentre,
         V::Reach,
         V::Stack,
         V::HeadTubeAngle,
         V::ChainstayLength,
         V::HeadTubeLength,
+        V::BottomBracketHeight,
         V::BottomBracketDrop,
     ],
 ];
@@ -320,6 +341,30 @@ fn solve(
         return None;
     }
 
+    // A free actual seat angle's default can't pass the effective (S-TUBES
+    // B6): it's held at the effective angle instead.
+    if !pinned.contains_key(&V::ActualSeatTubeAngle)
+        && values[&V::ActualSeatTubeAngle] > values[&V::EffectiveSeatTubeAngle]
+    {
+        let effective = values[&V::EffectiveSeatTubeAngle];
+        values.insert(V::ActualSeatTubeAngle, effective);
+    }
+    // The seat tube can bend back to the BB but not forward, so its actual
+    // angle can't be steeper than the effective (S-TUBES B6).
+    let (actual, effective) = (
+        values[&V::ActualSeatTubeAngle],
+        values[&V::EffectiveSeatTubeAngle],
+    );
+    if actual > effective + 1e-9 {
+        impossible(
+            diagnostics,
+            &format!(
+                "The actual seat angle ({actual:.1}°) can't be steeper than the effective seat angle ({effective:.1}°)."
+            ),
+        );
+        return None;
+    }
+
     let Some(static_state) = state(&values, &setup, 0.0) else {
         impossible(
             diagnostics,
@@ -410,6 +455,9 @@ fn default_value(bike: &DefaultBike, variable: V) -> f64 {
         V::ChainstayLength => bike.chainstay_length,
         V::Wheelbase => bike.wheelbase,
         V::BottomBracketHeight => bike.bottom_bracket_height,
+        // Always solved unless pinned (first in equations 3a and 3b): starting guesses.
+        V::FrontCentre => bike.wheelbase - bike.chainstay_length,
+        V::RearCentre => bike.chainstay_length,
     }
 }
 
@@ -417,9 +465,9 @@ fn in_equation(equation: usize, variable: V) -> bool {
     SOLVE_ORDER[equation].contains(&variable)
 }
 
-/// The three equation residuals, in millimetres. `None` when the chainstay
+/// The five equation residuals, in millimetres. `None` when the chainstay
 /// can't reach the rear axle or the head angle is out of range.
-fn residuals(v: &Values, s: &Setup) -> Option<[f64; 3]> {
+fn residuals(v: &Values, s: &Setup) -> Option<[f64; 5]> {
     let hta = v[&V::HeadTubeAngle];
     if !(hta > 0.0 && hta < 90.0) {
         return None;
@@ -436,7 +484,9 @@ fn residuals(v: &Values, s: &Setup) -> Option<[f64; 3]> {
     Some([
         bb_height - ((s.front_radius + s.rear_radius) / 2.0 - drop),
         front.y - ((s.front_radius - s.rear_radius) / 2.0 + drop),
-        v[&V::Wheelbase] - (front.x + rear_centre_sq.sqrt()),
+        v[&V::RearCentre] - rear_centre_sq.sqrt(),
+        v[&V::FrontCentre] - front.x,
+        v[&V::Wheelbase] - (v[&V::FrontCentre] + v[&V::RearCentre]),
     ])
 }
 
@@ -622,6 +672,8 @@ fn state(v: &Values, s: &Setup, compression: f64) -> Option<GeometryState> {
         (V::ChainstayLength, cs),
         (V::Wheelbase, front.x - rear.x),
         (V::BottomBracketHeight, bb_height),
+        (V::FrontCentre, front.x),
+        (V::RearCentre, -rear.x),
     ]);
 
     let state = GeometryState {

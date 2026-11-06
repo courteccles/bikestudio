@@ -269,6 +269,52 @@ fn charts_reproduce_with_head_tube_length_pinned() {
     );
 }
 
+/// S-EDIT-CENTERS: pin front and rear center instead of reach and chainstay;
+/// reach, chainstay and the chart values still come out.
+#[test]
+fn charts_reproduce_with_front_and_rear_center_pinned() {
+    let mut failures = Vec::new();
+    for chart in charts() {
+        for size in &chart.sizes {
+            let mut project = project_for(&chart, size);
+            project
+                .geometry
+                .pin(V::HeadTubeLength, head_tube_length(&chart, size));
+            let base = solve(&chart, size, &project).static_state;
+            let g = &mut project.geometry;
+            g.free(V::Reach);
+            g.free(V::ChainstayLength);
+            g.pin(V::FrontCentre, base.value(V::FrontCentre));
+            g.pin(V::RearCentre, base.value(V::RearCentre));
+            let s = solve(&chart, size, &project).static_state;
+            let mut c = Checker {
+                test: "head_tube_length_pinned",
+                chart: &chart.name,
+                size,
+                failures: &mut failures,
+            };
+            c.check("reach", s.value(V::Reach), size.reach);
+            c.check(
+                "chainstay",
+                s.value(V::ChainstayLength),
+                size.chainstay_length,
+            );
+            if let Some(wb) = size.wheelbase {
+                c.check("wheelbase", s.value(V::Wheelbase), wb);
+            }
+            if let Some(drop) = size.bottom_bracket_drop {
+                c.check("BB drop", s.value(V::BottomBracketDrop), drop);
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} chart values off:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}
+
 /// Pin stack, reach, head angle, chainstay and BB drop; check head tube length and wheelbase.
 #[test]
 fn charts_reproduce_with_bb_drop_pinned() {

@@ -14,6 +14,14 @@ const LOWER_LEG_EXTRA: f64 = 8.0;
 /// A rigid fork blade's diameter, when not given.
 const RIGID_BLADE: f64 = 28.0;
 const CROWN_HEIGHT: f64 = 40.0;
+/// Rigid crown overhang past the steerer or blade, each side.
+const RIGID_CROWN_MARGIN: f64 = 6.0;
+/// Where a rigid blade starts to bend, as a fraction of the crown's height above the axle.
+const RIGID_BEND_START: f64 = 0.45;
+const RIGID_BEND_STEPS: usize = 24;
+/// The bend's control point height, as a fraction of where the bend starts:
+/// lower makes the blade arrive at the axle more upright.
+const RIGID_BEND_CONTROL: f64 = 0.3;
 /// Dropout below the axle.
 const DROPOUT: f64 = 20.0;
 /// Stanchion showing above the lower leg at full extension, beyond the travel.
@@ -49,8 +57,10 @@ pub fn fork(fork: &Fork, compression: f64) -> Drawing {
     let travel = fork.travel.0;
     let offset = fork.offset.0;
     let compression = compression.clamp(0.0, travel.max(0.0));
-    let crown_bottom = a2c - compression;
+    // Axle-to-crown is measured to the top of the crown, where the head tube sits.
     let crown_height = fork.crown_height.map_or(CROWN_HEIGHT, |c| c.0);
+    let crown_top = a2c - compression;
+    let crown_bottom = crown_top - crown_height;
     let steerer_bottom = match fork.steerer {
         bike_model::Steerer::Tapered { bottom, .. } => bottom,
         bike_model::Steerer::Straight { diameter } => diameter,
@@ -62,7 +72,7 @@ pub fn fork(fork: &Fork, compression: f64) -> Drawing {
         let lower = fork
             .lower_leg_diameter
             .map_or(stanchion + LOWER_LEG_EXTRA, |l| l.0);
-        let lower_top = a2c - travel - SEAL_CLEARANCE;
+        let lower_top = a2c - crown_height - travel - SEAL_CLEARANCE;
         shapes.push(rectangle(-lower / 2.0, -DROPOUT, lower / 2.0, lower_top));
         shapes.push(rectangle(
             -stanchion / 2.0,
@@ -71,26 +81,97 @@ pub fn fork(fork: &Fork, compression: f64) -> Drawing {
             crown_bottom,
         ));
     } else {
+        // A rigid fork: the crown sits on the steering axis, and the blades
+        // leave it along the axis, then curve forward to the axle.
         let blade = fork.lower_leg_diameter.map_or(RIGID_BLADE, |l| l.0);
-        shapes.push(rectangle(-blade / 2.0, -DROPOUT, blade / 2.0, crown_bottom));
+        shapes.push(rigid_blade(offset, crown_bottom, blade));
+        let half = (steerer_bottom / 2.0).max(blade / 2.0) + RIGID_CROWN_MARGIN;
+        shapes.push(rectangle(
+            -offset - half,
+            crown_bottom,
+            -offset + half,
+            crown_top,
+        ));
+        shapes.push(rectangle(
+            -offset - steerer_bottom / 2.0,
+            crown_top,
+            -offset + steerer_bottom / 2.0,
+            crown_top + STEERER_SHOWN,
+        ));
+        return Drawing {
+            shapes,
+            svg_path: fork.svg_path.clone(),
+        };
     }
     let leg_half = shapes[0][1].x;
     shapes.push(rectangle(
         -offset - steerer_bottom / 2.0,
         crown_bottom,
         leg_half.max(-offset + steerer_bottom / 2.0),
-        crown_bottom + crown_height,
+        crown_top,
     ));
     shapes.push(rectangle(
         -offset - steerer_bottom / 2.0,
-        crown_bottom + crown_height,
+        crown_top,
         -offset + steerer_bottom / 2.0,
-        crown_bottom + crown_height + STEERER_SHOWN,
+        crown_top + STEERER_SHOWN,
     ));
     Drawing {
         shapes,
         svg_path: fork.svg_path.clone(),
     }
+}
+
+/// A rigid blade `width` wide: straight down the steering axis (`offset`
+/// behind the axle) from the crown, then one forward curve (no S bend) into
+/// the axle, ending in a rounded dropout centred on the axle.
+fn rigid_blade(offset: f64, crown_bottom: f64, width: f64) -> Vec<Point> {
+    let bend = crown_bottom * RIGID_BEND_START;
+    // A quadratic from (−offset, bend) to the axle: it leaves along the axis
+    // and bends forward the whole way.
+    let (p0, p1, p2) = (
+        Point::new(-offset, bend),
+        Point::new(-offset, bend * RIGID_BEND_CONTROL),
+        Point::new(0.0, 0.0),
+    );
+    let mut line = vec![Point::new(-offset, crown_bottom)];
+    for i in 0..=RIGID_BEND_STEPS {
+        let t = i as f64 / RIGID_BEND_STEPS as f64;
+        let u = 1.0 - t;
+        let (a, b, c) = (u * u, 2.0 * u * t, t * t);
+        line.push(Point::new(
+            a * p0.x + b * p1.x + c * p2.x,
+            a * p0.y + b * p1.y + c * p2.y,
+        ));
+    }
+    // The blade's direction arriving at the axle; the round end is centred
+    // on the axle, concentric with the hub.
+    let (ex, ey) = (p2.x - p1.x, p2.y - p1.y);
+    let n = ex.hypot(ey);
+    let dir = Point::new(ex / n, ey / n);
+    let half = width / 2.0;
+    let tip = p2;
+    // Offset each point square to the line, half the width each side.
+    let side = |k: f64| -> Vec<Point> {
+        (0..line.len())
+            .map(|i| {
+                let (a, b) = (line[i.saturating_sub(1)], line[(i + 1).min(line.len() - 1)]);
+                let (dx, dy) = (b.x - a.x, b.y - a.y);
+                let n = dx.hypot(dy).max(f64::EPSILON);
+                Point::new(line[i].x - dy / n * k, line[i].y + dx / n * k)
+            })
+            .collect()
+    };
+    let mut outline = side(half);
+    // A half circle round the tip, from the first side to the second.
+    // The first side is on the blade's left; sweep clockwise through `dir`.
+    let start = dir.x.atan2(-dir.y);
+    for i in 1..RIGID_BEND_STEPS {
+        let a = start - std::f64::consts::PI * i as f64 / RIGID_BEND_STEPS as f64;
+        outline.push(Point::new(tip.x + half * a.cos(), tip.y + half * a.sin()));
+    }
+    outline.extend(side(-half).into_iter().rev());
+    outline
 }
 
 /// The shock `compression` mm into its stroke (0 = fully extended).

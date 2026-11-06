@@ -314,3 +314,49 @@ fn a_given_centre_of_mass_wins_over_the_drawing() {
         Point::new(-5.0, 7.0)
     );
 }
+
+/// Axle-to-crown runs to the top of the crown, where the head tube sits.
+#[test]
+fn the_crown_top_is_at_axle_to_crown() {
+    let library = Library::builtin().unwrap();
+    for fork in library.forks.values() {
+        let d = drawing::fork(fork, 0.0);
+        // Shapes: legs, then the crown, then the steerer.
+        let crown = &d.shapes[d.shapes.len() - 2];
+        let top = crown.iter().map(|p| p.y).fold(f64::MIN, f64::max);
+        assert!((top - fork.axle_to_crown.0).abs() < 1e-9, "{}", fork.name);
+    }
+}
+
+/// A rigid fork: the crown is centred on the steering axis, and the blade
+/// leaves it along the axis before curving forward to the axle.
+#[test]
+fn a_rigid_fork_has_a_centred_crown_and_curved_blades() {
+    let mut fork = library().forks.values().next().unwrap().clone();
+    fork.travel = Millimeters(0.0);
+    let offset = fork.offset.0;
+    let d = drawing::fork(&fork, 0.0);
+    assert_eq!(d.shapes.len(), 3, "blade, crown, steerer");
+    assert!(d.shapes.iter().all(|s| is_simple(s)));
+    let crown = &d.shapes[1];
+    let (lo, hi) = crown.iter().fold((f64::MAX, f64::MIN), |(lo, hi), p| {
+        (lo.min(p.x), hi.max(p.x))
+    });
+    assert!(
+        ((lo + hi) / 2.0 + offset).abs() < 1e-9,
+        "crown centred on the axis"
+    );
+    let top = crown.iter().map(|p| p.y).fold(f64::MIN, f64::max);
+    assert!((top - fork.axle_to_crown.0).abs() < 1e-9);
+    // The blade's top is on the axis; it reaches the axle, ahead of the axis.
+    let blade = &d.shapes[0];
+    let highest = blade.iter().map(|p| p.y).fold(f64::MIN, f64::max);
+    let at_top: Vec<f64> = blade
+        .iter()
+        .filter(|p| p.y == highest)
+        .map(|p| p.x)
+        .collect();
+    let mid = at_top.iter().sum::<f64>() / at_top.len() as f64;
+    assert!((mid + offset).abs() < 1e-9, "blade starts on the axis");
+    assert!(blade.iter().any(|p| p.x > 0.0) && blade.iter().any(|p| p.y < 0.0));
+}

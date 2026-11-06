@@ -44,6 +44,10 @@ This spec covers the data, how a project refers to it, and how a selection turns
 - Save/load round-trips a project with library and custom components.
 - CI passes on Linux and macOS.
 
+## Changes after approval
+
+- 2026-11-05 (C13): a rigid fork's crown is centred on the steering axis, not offset. Each blade leaves the crown along the steering axis, then curves forward in one direction (no S bend) to the axle, and ends in a rounded dropout centred on the axle, concentric with the hub. On every fork, axle-to-crown is measured to the top of the crown.
+
 ## Open questions
 
 - None.

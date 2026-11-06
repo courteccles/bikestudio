@@ -19,6 +19,10 @@ pub enum Field {
     TopTubeJunction,
     DownTubeJunction,
     SeatTubeOverhang,
+    /// Minimum bend radius of a bent seat tube (S-TUBES B2).
+    SeatTubeBendRadius,
+    /// Seatpost insertion depth, read only (S-TUBES B2).
+    SeatTubeInsertion,
     TubeDiameter(TubeKind),
     TubeWall(TubeKind),
     CrankLength,
@@ -26,11 +30,8 @@ pub enum Field {
     PedalThickness,
     ForkAxleToCrown,
     ForkOffset,
-    /// Read-only: crank centre to front axle, horizontal.
-    FrontCentre,
-    /// Read-only: crank centre to rear axle, horizontal.
-    RearCentre,
-    /// Read-only: see [`crate::scene::standover`].
+    /// See [`crate::scene::standover`]; pinned, it moves the seat tube
+    /// junction (S-EDIT-CENTERS E2).
     Standover,
 }
 
@@ -45,8 +46,8 @@ impl Field {
             Field::Geometry(V::HeadTubeAngle) => 'D',
             Field::Geometry(V::ActualSeatTubeAngle) => 'E',
             Field::Geometry(V::EffectiveSeatTubeAngle) => 'F',
-            Field::FrontCentre => 'G',
-            Field::RearCentre => 'H',
+            Field::Geometry(V::FrontCentre) => 'G',
+            Field::Geometry(V::RearCentre) => 'H',
             Field::Geometry(V::Wheelbase) => 'I',
             Field::Geometry(V::BottomBracketHeight) => 'J',
             Field::Standover => 'K',
@@ -56,16 +57,65 @@ impl Field {
             Field::ForkAxleToCrown => 'O',
             Field::Geometry(V::BottomBracketDrop) => 'Q',
             Field::Geometry(V::ChainstayLength) => 'R',
+            Field::SeatTubeOverhang => 'S',
             _ => return None,
         })
     }
 
-    pub fn is_read_only(self) -> bool {
-        matches!(
-            self,
-            Field::FrontCentre | Field::RearCentre | Field::Standover
-        )
+    /// Geometry rows drawn in one box together share a group: head tube,
+    /// seat tube, bottom bracket, fork and cranks.
+    pub fn group(self) -> Option<u8> {
+        Some(match self {
+            Field::Geometry(V::HeadTubeAngle | V::HeadTubeLength) => 0,
+            Field::Geometry(V::EffectiveSeatTubeAngle | V::ActualSeatTubeAngle)
+            | Field::SeatTubeLength
+            | Field::SeatTubeOverhang
+            | Field::SeatTubeInsertion => 1,
+            Field::Geometry(V::BottomBracketDrop | V::BottomBracketHeight) => 2,
+            Field::ForkOffset | Field::ForkAxleToCrown => 3,
+            Field::CrankLength | Field::PedalLength | Field::PedalThickness => 4,
+            _ => return None,
+        })
     }
+}
+
+/// The header drawn at the top of a group's box.
+pub fn group_title(group: u8) -> &'static str {
+    match group {
+        0 => "Head tube",
+        1 => "Saddle",
+        2 => "Bottom bracket",
+        3 => "Fork",
+        _ => "Cranks",
+    }
+}
+
+/// Where a Geometry row sits in the panel.
+fn geometry_rank(field: Field) -> usize {
+    const ORDER: [Field; 18] = [
+        Field::Geometry(V::Reach),
+        Field::Geometry(V::Stack),
+        Field::Geometry(V::HeadTubeAngle),
+        Field::Geometry(V::HeadTubeLength),
+        Field::Geometry(V::EffectiveSeatTubeAngle),
+        Field::Geometry(V::ActualSeatTubeAngle),
+        Field::SeatTubeLength,
+        Field::SeatTubeOverhang,
+        Field::SeatTubeInsertion,
+        Field::Standover,
+        Field::Geometry(V::FrontCentre),
+        Field::Geometry(V::RearCentre),
+        Field::Geometry(V::ChainstayLength),
+        Field::Geometry(V::Wheelbase),
+        Field::Geometry(V::BottomBracketDrop),
+        Field::Geometry(V::BottomBracketHeight),
+        Field::ForkOffset,
+        Field::ForkAxleToCrown,
+    ];
+    ORDER
+        .iter()
+        .position(|f| *f == field)
+        .unwrap_or(ORDER.len())
 }
 
 /// The panel's sections, in order.
@@ -74,7 +124,6 @@ pub enum Section {
     Travel,
     Geometry,
     Tubes,
-    Cranks,
 }
 
 impl Section {
@@ -83,7 +132,6 @@ impl Section {
             Section::Travel => "Travel",
             Section::Geometry => "Geometry",
             Section::Tubes => "Tubes",
-            Section::Cranks => "Cranks",
         }
     }
 }
@@ -220,7 +268,7 @@ pub fn fields(doc: &Document, data: &Data, display: LengthUnit) -> Vec<FieldView
     for (field, label, set, solved) in [
         (
             Field::ForkAxleToCrown,
-            "Fork axle-to-crown",
+            "Axle-to-crown",
             p.fork.axle_to_crown,
             geometry.map(|g| g.fork_axle_to_crown),
         ),
@@ -240,36 +288,44 @@ pub fn fields(doc: &Document, data: &Data, display: LengthUnit) -> Vec<FieldView
             display,
         ));
     }
-    for (field, label, value) in [
-        (
-            Field::FrontCentre,
-            "Front centre",
-            geometry.map(|g| g.static_state.front_centre),
-        ),
-        (
-            Field::RearCentre,
-            "Rear centre",
-            geometry.map(|g| g.static_state.rear_centre),
-        ),
-        (
-            Field::Standover,
-            "Standover",
-            crate::scene::standover(&doc.solved),
-        ),
-    ] {
-        out.push(FieldView {
-            field,
-            section: Section::Geometry,
-            label: label.into(),
-            text: length(value, display),
-            unit: display.label(),
-            locked: None,
-            dimmed: true,
-            is_default: false,
-            letter: None,
-            read_only: true,
-        });
+    let standover_pinned = p.tubes.standover.pinned();
+    let standover = standover_pinned.or_else(|| crate::scene::standover(&doc.solved));
+    out.push(FieldView {
+        field: Field::Standover,
+        section: Section::Geometry,
+        label: "Standover".into(),
+        text: length(standover, display),
+        unit: display.label(),
+        locked: Some(standover_pinned.is_some()),
+        dimmed: standover_pinned.is_none(),
+        is_default: false,
+        letter: None,
+        read_only: false,
+    });
+    let mut overhang = optional_length(
+        Field::SeatTubeOverhang,
+        Section::Geometry,
+        "Mast",
+        p.tubes.junctions.seat_tube_overhang,
+        tubes.map(|t| t.seat_tube_overhang),
+        display,
+    );
+    // Solved from a pinned standover: calculated, not a default.
+    if tubes.is_some_and(|t| t.seat_tube_overhang_source == ValueSource::Solved) {
+        overhang.is_default = false;
     }
+    out.push(overhang);
+    let mut insertion = optional_length(
+        Field::SeatTubeInsertion,
+        Section::Geometry,
+        "Insertion depth",
+        None,
+        tubes.map(|t| t.seat_tube_insertion),
+        display,
+    );
+    insertion.read_only = true;
+    insertion.is_default = false;
+    out.push(insertion);
     let seat_pinned = p.tubes.seat_tube_length.pinned();
     let seat = seat_pinned.or_else(|| tubes.map(|t| t.seat_tube_length));
     out.push(FieldView {
@@ -284,12 +340,12 @@ pub fn fields(doc: &Document, data: &Data, display: LengthUnit) -> Vec<FieldView
         letter: None,
         read_only: false,
     });
-    // Geometry rows run in letter order, to match the drawing.
+    // Geometry rows run in the order the designer reads a geometry chart.
     let start = out
         .iter()
         .position(|v| v.section == Section::Geometry)
         .unwrap_or(out.len());
-    out[start..].sort_by_key(|v| v.field.letter());
+    out[start..].sort_by_key(|v| geometry_rank(v.field));
 
     for kind in TubeKind::ALL {
         let tube = tubes.and_then(|t| t.tube(kind));
@@ -312,10 +368,19 @@ pub fn fields(doc: &Document, data: &Data, display: LengthUnit) -> Vec<FieldView
         ));
     }
 
+    out.push(optional_length(
+        Field::SeatTubeBendRadius,
+        Section::Tubes,
+        "Seat tube bend radius",
+        p.tubes.seat_tube_bend_radius,
+        tubes.map(|t| t.seat_tube_bend_radius),
+        display,
+    ));
+
     let pedal = p.crank.pedal;
     out.push(optional_length(
         Field::CrankLength,
-        Section::Cranks,
+        Section::Geometry,
         "Crank length",
         p.crank.crank_length,
         geometry.map(|g| g.crank_length),
@@ -323,7 +388,7 @@ pub fn fields(doc: &Document, data: &Data, display: LengthUnit) -> Vec<FieldView
     ));
     out.push(optional_length(
         Field::PedalLength,
-        Section::Cranks,
+        Section::Geometry,
         "Pedal length",
         pedal.map(|p| p.length),
         geometry.map(|g| g.pedal_length),
@@ -331,7 +396,7 @@ pub fn fields(doc: &Document, data: &Data, display: LengthUnit) -> Vec<FieldView
     ));
     out.push(optional_length(
         Field::PedalThickness,
-        Section::Cranks,
+        Section::Geometry,
         "Pedal thickness",
         pedal.map(|p| p.thickness),
         geometry.map(|g| g.pedal_thickness),
@@ -377,14 +442,16 @@ pub fn end_label(end: End) -> &'static str {
 
 /// The command a committed field becomes, or `None` if the text is unchanged
 /// (the no-drift rule, S-UNITS U7). Typing into a free geometry field pins it
-/// (H4); clearing a field frees it or returns it to the default.
+/// (H4). Clearing a field changes nothing (it shows its value again); a
+/// value is freed with its lock.
 pub fn commit(
     doc: &Document,
     view: &FieldView,
     text: &str,
     display: LengthUnit,
 ) -> Result<Option<Command>, ParseError> {
-    if text.trim() == view.text.trim() {
+    // Unchanged, or cleared by accident: the field keeps its value.
+    if text.trim() == view.text.trim() || text.trim().is_empty() {
         return Ok(None);
     }
     let field = view.field;
@@ -399,7 +466,10 @@ pub fn commit(
         }));
     }
     let unit = field.unit(display);
-    let current = shown_value(doc, field).map(Millimeters);
+    // BB drop can be negative, so a leading sign there is the value's sign,
+    // not a nudge to the current value (U7): "-30" is −30 mm.
+    let signed = matches!(field, Field::Geometry(V::BottomBracketDrop));
+    let current = shown_value(doc, field).map(Millimeters).filter(|_| !signed);
     let value = commit_length(text, &view.text, current, unit)?;
     let p = &doc.project;
     let mut tubes = p.tubes.clone();
@@ -426,6 +496,11 @@ pub fn commit(
             tubes.junctions.seat_tube_overhang = value;
             Command::SetTubes(tubes)
         }
+        Field::SeatTubeBendRadius => {
+            tubes.seat_tube_bend_radius = value;
+            Command::SetTubes(tubes)
+        }
+        Field::SeatTubeInsertion => return Ok(None),
         Field::TubeDiameter(kind) | Field::TubeWall(kind) => {
             let section = tubes.sections.entry(kind).or_default();
             if matches!(field, Field::TubeDiameter(_)) {
@@ -447,7 +522,10 @@ pub fn commit(
             }
             Command::SetFork(fork)
         }
-        Field::FrontCentre | Field::RearCentre | Field::Standover => return Ok(None),
+        Field::Standover => {
+            tubes.standover = value.map_or(Parameter::Free, |m| Parameter::Pinned(m.0));
+            Command::SetTubes(tubes)
+        }
         Field::CrankLength => {
             crank.crank_length = value;
             Command::SetCrank(crank)
@@ -484,6 +562,33 @@ pub fn toggle_lock(doc: &Document, field: Field) -> Option<Command> {
             };
             Some(Command::SetTubes(tubes))
         }
+        Field::Standover => {
+            let mut tubes = doc.project.tubes.clone();
+            tubes.standover = match tubes.standover {
+                Parameter::Pinned(_) => Parameter::Free,
+                Parameter::Free => Parameter::Pinned(shown_value(doc, field)?),
+            };
+            Some(Command::SetTubes(tubes))
+        }
+        _ => None,
+    }
+}
+
+/// Why `text` isn't allowed in a field, or `None`. Only values that parse
+/// are checked here; a parse error is reported when the field commits. The
+/// panel blocks these and outlines the field.
+pub fn not_allowed(
+    doc: &Document,
+    view: &FieldView,
+    text: &str,
+    display: LengthUnit,
+) -> Option<String> {
+    match commit(doc, view, text, display) {
+        Ok(Some(Command::PinGeometry(v, value))) => {
+            doc.seat_angle_limit(v, value).map(|(limit, rule)| {
+                format!("{} {rule} ({}°).", view.label, format_angle(Degrees(limit)))
+            })
+        }
         _ => None,
     }
 }
@@ -508,6 +613,8 @@ fn shown_value(doc: &Document, field: Field) -> Option<f64> {
         Field::TopTubeJunction => t.map(|t| t.top_tube_below_head_tube_top),
         Field::DownTubeJunction => t.map(|t| t.down_tube_above_head_tube_bottom),
         Field::SeatTubeOverhang => t.map(|t| t.seat_tube_overhang),
+        Field::SeatTubeBendRadius => t.map(|t| t.seat_tube_bend_radius),
+        Field::SeatTubeInsertion => t.map(|t| t.seat_tube_insertion),
         Field::TubeDiameter(k) => t.and_then(|t| t.tube(k)).map(|t| t.outside_diameter),
         Field::TubeWall(k) => t.and_then(|t| t.tube(k)).map(|t| t.wall),
         Field::CrankLength => g.map(|g| g.crank_length),
@@ -515,9 +622,11 @@ fn shown_value(doc: &Document, field: Field) -> Option<f64> {
         Field::PedalThickness => g.map(|g| g.pedal_thickness),
         Field::ForkAxleToCrown => g.map(|g| g.fork_axle_to_crown),
         Field::ForkOffset => g.map(|g| g.fork_offset),
-        Field::FrontCentre => g.map(|g| g.static_state.front_centre),
-        Field::RearCentre => g.map(|g| g.static_state.rear_centre),
-        Field::Standover => crate::scene::standover(&doc.solved),
+        Field::Standover => p
+            .tubes
+            .standover
+            .pinned()
+            .or_else(|| crate::scene::standover(&doc.solved)),
     }
 }
 
@@ -551,7 +660,7 @@ mod tests {
             assert!(row.dimmed && !row.text.is_empty(), "{v:?}");
         }
         assert!(views.iter().any(|v| v.label == "Effective seat angle"));
-        assert!(views.iter().any(|v| v.label == "Actual seat angle"));
+        assert!(views.iter().any(|v| v.label == "Seat tube angle"));
     }
 
     #[test]
@@ -565,10 +674,9 @@ mod tests {
             commit(&doc, &reach, "480", mm).unwrap(),
             Some(Command::PinGeometry(V::Reach, 480.0))
         );
-        assert_eq!(
-            commit(&doc, &reach, "", mm).unwrap(),
-            Some(Command::FreeGeometry(V::Reach))
-        );
+        // Cleared by accident: nothing changes, and the field shows its value again.
+        assert_eq!(commit(&doc, &reach, "", mm).unwrap(), None);
+        assert_eq!(commit(&doc, &reach, "  ", mm).unwrap(), None);
         assert!(commit(&doc, &reach, "4x", mm).is_err());
 
         let angle = view(&views, Field::Geometry(V::HeadTubeAngle));
@@ -651,8 +759,8 @@ mod tests {
         let views = solved(&mut doc);
         let wall = view(&views, Field::TubeWall(TubeKind::DownTube));
         assert!(!wall.dimmed);
-        doc.apply(commit(&doc, &wall, "", mm).unwrap().unwrap());
-        assert!(doc.project.tubes.sections.is_empty());
+        // Clearing it keeps the override.
+        assert_eq!(commit(&doc, &wall, "", mm).unwrap(), None);
 
         let views = solved(&mut doc);
         let pedal = view(&views, Field::PedalLength);
@@ -666,7 +774,7 @@ mod tests {
     }
 
     #[test]
-    fn fork_rows_set_overrides_and_derived_rows_are_read_only() {
+    fn fork_rows_set_overrides_and_standover_pins() {
         let mut doc = Document::new();
         let views = solved(&mut doc);
         let offset = view(&views, Field::ForkOffset);
@@ -677,17 +785,90 @@ mod tests {
             Some(Command::SetFork(f)) if f.offset == Some(Millimeters(51.0))
         ));
         let standover = view(&views, Field::Standover);
-        assert!(standover.read_only && !standover.text.is_empty());
+        assert!(!standover.read_only && standover.locked == Some(false));
+        assert!(matches!(
+            commit(&doc, &standover, "780", LengthUnit::Millimeters).unwrap(),
+            Some(Command::SetTubes(t)) if t.standover == Parameter::Pinned(780.0)
+        ));
+        for v in [V::FrontCentre, V::RearCentre] {
+            let row = view(&views, Field::Geometry(v));
+            assert!(!row.read_only && row.locked == Some(false), "{v:?}");
+        }
+        let overhang = view(&views, Field::SeatTubeOverhang);
         assert_eq!(
-            commit(&doc, &standover, "1", LengthUnit::Millimeters).unwrap(),
-            None
+            (overhang.letter, overhang.field.group()),
+            (Some('S'), Some(1))
         );
+        assert!(matches!(
+            commit(&doc, &overhang, "60", LengthUnit::Millimeters).unwrap(),
+            Some(Command::SetTubes(t)) if t.junctions.seat_tube_overhang == Some(Millimeters(60.0))
+        ));
         let letters: Vec<char> = views
             .iter()
             .filter(|v| v.section == Section::Geometry)
             .filter_map(|v| v.letter)
             .collect();
-        assert_eq!(letters.iter().collect::<String>(), "ABDEFGHIJKLMNOQR");
+        assert_eq!(letters.iter().collect::<String>(), "ABDNFELSKGHRIQJMO");
+        // Each group's rows sit next to each other, so one box holds them.
+        let groups: Vec<Option<u8>> = views
+            .iter()
+            .filter(|v| v.section == Section::Geometry)
+            .map(|v| v.field.group())
+            .collect();
+        let mut runs: Vec<Option<u8>> = groups.clone();
+        runs.dedup();
+        let boxed: Vec<u8> = runs.into_iter().flatten().collect();
+        assert_eq!(boxed, [0, 1, 2, 3, 4]);
+        assert_eq!(groups.iter().flatten().count(), 14);
+    }
+
+    /// A seat tube angle past the effective is flagged, so the panel can
+    /// block it (S-TUBES B6).
+    #[test]
+    fn seat_tube_angle_past_the_effective_is_not_allowed() {
+        let mut doc = Document::new();
+        doc.apply(Command::PinGeometry(V::EffectiveSeatTubeAngle, 75.0));
+        doc.apply(Command::PinGeometry(V::ActualSeatTubeAngle, 74.0));
+        let views = solved(&mut doc);
+        let actual = view(&views, Field::Geometry(V::ActualSeatTubeAngle));
+        let effective = view(&views, Field::Geometry(V::EffectiveSeatTubeAngle));
+        let unit = LengthUnit::Millimeters;
+        assert!(not_allowed(&doc, &actual, "75.1", unit).is_some());
+        assert!(not_allowed(&doc, &actual, "75", unit).is_none());
+        assert!(not_allowed(&doc, &actual, "abc", unit).is_none());
+        assert!(not_allowed(&doc, &effective, "73.9", unit).is_none());
+        assert!(not_allowed(&doc, &effective, "76", unit).is_none());
+    }
+
+    /// Regression: a negative BB drop was read as a nudge, so stepping or
+    /// typing "-30" subtracted 30 from the current value.
+    #[test]
+    fn a_negative_bb_drop_is_a_value_not_a_nudge() {
+        let mut doc = Document::new();
+        doc.apply(Command::PinGeometry(V::BottomBracketDrop, -29.0));
+        let views = solved(&mut doc);
+        let bb = view(&views, Field::Geometry(V::BottomBracketDrop));
+        let mm = LengthUnit::Millimeters;
+        assert_eq!(
+            commit(&doc, &bb, "-30", mm).unwrap(),
+            Some(Command::PinGeometry(V::BottomBracketDrop, -30.0))
+        );
+        for up in [true, false] {
+            let next = step(&bb, &bb.text, up, false, mm).unwrap();
+            let want = if up { -28.0 } else { -30.0 };
+            assert_eq!(
+                commit(&doc, &bb, &next, mm).unwrap(),
+                Some(Command::PinGeometry(V::BottomBracketDrop, want)),
+                "{next}"
+            );
+        }
+        // Other lengths still nudge.
+        let reach = view(&views, Field::Geometry(V::Reach));
+        let current = shown_value(&doc, reach.field).unwrap();
+        assert_eq!(
+            commit(&doc, &reach, "+10", mm).unwrap(),
+            Some(Command::PinGeometry(V::Reach, current + 10.0))
+        );
     }
 
     #[test]
@@ -717,8 +898,55 @@ mod tests {
         assert_eq!(step(&crank, "x", true, false, LengthUnit::Inches), None);
         let standover = view(&views, Field::Standover);
         assert_eq!(
-            step(&standover, "800", true, false, LengthUnit::Millimeters),
-            None
+            step(&standover, "800", true, false, LengthUnit::Millimeters).as_deref(),
+            Some("801.0")
         );
+    }
+}
+
+#[cfg(test)]
+mod clearing {
+    use super::*;
+    use crate::document::{Data, Document};
+
+    /// Regression: freeing a field of a bike with low seat angles left no
+    /// geometry, because the seat tube angle's default (74°) passed the
+    /// effective angle. Clearing a field now changes nothing, and unlocking
+    /// any field keeps the model.
+    #[test]
+    fn clearing_or_unlocking_any_field_keeps_the_model() {
+        let data = Data::builtin();
+        let mut doc = Document::new();
+        doc.solve(&data);
+        let g = doc.solved.geometry.clone().unwrap();
+        for v in [
+            V::Reach,
+            V::Stack,
+            V::HeadTubeAngle,
+            V::ChainstayLength,
+            V::BottomBracketDrop,
+        ] {
+            doc.apply(Command::PinGeometry(v, g.static_state.value(v)));
+        }
+        doc.apply(Command::PinGeometry(V::EffectiveSeatTubeAngle, 72.0));
+        doc.apply(Command::PinGeometry(V::ActualSeatTubeAngle, 71.0));
+        doc.solve(&data);
+        let views = fields(&doc, &data, LengthUnit::Millimeters);
+        for view in views.iter().filter(|v| !v.read_only) {
+            let mut d = Document::with_project(doc.project.clone(), None);
+            d.solve(&data);
+            assert_eq!(commit(&d, view, "", LengthUnit::Millimeters), Ok(None));
+            if let Some(command) = toggle_lock(&d, view.field).filter(|_| view.locked == Some(true))
+            {
+                d.apply(command);
+                d.solve(&data);
+                assert!(
+                    d.solved.geometry.is_some() && d.solved.tubes.is_some(),
+                    "unlocking {:?}: {:?}",
+                    view.field,
+                    d.solved.diagnostics
+                );
+            }
+        }
     }
 }

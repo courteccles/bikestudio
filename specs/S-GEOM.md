@@ -73,6 +73,9 @@ The saddle point, the seat tube axis, trail, front centre, rear centre and fork 
 
 - 2026-11-02: Corrected errors left from drafting: BB drop is defined as in G8, the frame has 5 degrees of freedom, actual seat tube angle is in scope (G4), the sag hand calculation covers hardtails only, and chart values recorded as known gaps are exempt from the ±3 mm check.
 - 2026-11-04 (S-SHELL amendment): defaults are no longer reported as diagnostics; the panel labels them from `ValueSource`. `wheel.missing`, `fork.default`, `geometry.unpinned` and `geometry.default` are removed.
+- 2026-11-05 (S-TUBES B6): the actual seat angle can't be steeper than the effective; after solving, that's a `geometry.impossible` error.
+- 2026-11-06 (S-TUBES B6): a free actual seat angle's default is capped at the effective seat angle, so clearing it can't break the solve.
+- 2026-11-05 (S-EDIT-CENTERS E1): front centre and rear centre are now pinnable geometry variables (`FrontCentre`, `RearCentre`, labelled Front center and Rear center), replacing "never pinned in version 1". Equation 3 splits into three: (3a) chainstay² = rear centre² + rear axle height², (3b) front centre = the front axle's horizontal distance ahead of the crank centre, and (3c) wheelbase = rear centre + front centre. With two more variables and two more equations, the number of free values stays the same. G5 order: (3a) rear centre, chainstay; (3b) front centre, reach, stack, head angle; (3c) wheelbase, front centre, rear centre, then reach, stack, head angle, chainstay. A chart test pins front and rear centre instead of reach and chainstay.
 
 ## Open questions
 
