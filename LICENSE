@@ -9,11 +9,13 @@ data (component, rider, default and reference data), together "the Software".
    (a) an individual using it for personal or non-commercial purposes; or
    (b) an individual, business or organisation, including a framebuilder, bike
        shop, bike fitter or educator, using it commercially, if that business
-       or organisation has fewer than 10 people (employees and contractors)
-       and less than US$1,000,000 in gross annual revenue.
+       or organisation has 4 or fewer people (including owners, employees and
+       contractors), less than US$25,000 in gross annual revenue, and has
+       raised less than US$25,000 in total funding (investment, loans, grants
+       or crowdfunding).
 
 2. Commercial licence. Any other commercial use, including by a business or
-   organisation above either threshold in section 1(b), needs a separate
+   organisation that exceeds any limit in section 1(b), needs a separate
    written licence from the copyright holder. To ask for one, open an issue
    at https://github.com/courteccles/bikestudio-community.
 

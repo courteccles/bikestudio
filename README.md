@@ -14,6 +14,6 @@ Issues are public, so don't post anything private. If you need to share private 
 
 ## Licence
 
-BikeStudio is free for individuals and for businesses with fewer than 10 people and under US$1M in annual revenue, including commercial use. Larger businesses need a commercial licence. See [LICENSE](LICENSE) for the full terms.
+BikeStudio is free for individuals and for businesses with 4 or fewer people, under US$25K in gross annual revenue and under US$25K in funding raised, including commercial use. Businesses over any of those limits need a commercial licence. See [LICENSE](LICENSE) for the full terms.
 
 Contributions are by invitation and need a signed contributor agreement.

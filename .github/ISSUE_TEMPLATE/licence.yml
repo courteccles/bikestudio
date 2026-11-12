@@ -1,5 +1,5 @@
 name: Ask about a commercial licence
-description: For businesses with 10 or more people or US$1M or more in annual revenue.
+description: For businesses with more than 4 people, or US$25K or more in annual revenue or funding raised.
 labels: [licensing]
 body:
   - type: markdown
