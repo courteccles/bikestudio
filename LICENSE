@@ -1,0 +1,52 @@
+BikeStudio Licence
+Copyright (c) 2026 Courtenay Eccles. All rights reserved.
+
+This licence covers BikeStudio's source code, compiled builds, and bundled
+data (component, rider, default and reference data), together "the Software".
+
+1. Free use. You may download, install and use the Software free of charge if
+   you are:
+   (a) an individual using it for personal or non-commercial purposes; or
+   (b) an individual, business or organisation, including a framebuilder, bike
+       shop, bike fitter or educator, using it commercially, if that business
+       or organisation has fewer than 10 people (employees and contractors)
+       and less than US$1,000,000 in gross annual revenue.
+
+2. Commercial licence. Any other commercial use, including by a business or
+   organisation above either threshold in section 1(b), needs a separate
+   written licence from the copyright holder. To ask for one, open an issue
+   at https://github.com/courteccles/bikestudio-community.
+
+3. Restrictions. Unless the copyright holder has given you written permission,
+   you may not:
+   (a) copy, redistribute, sublicense, sell, rent or lease the Software, or
+       any part of it, including its data;
+   (b) modify, adapt, translate or create derivative works of the Software;
+   (c) reverse engineer, decompile or disassemble compiled builds, except
+       where the law allows this despite this restriction; or
+   (d) remove or alter this licence or any copyright notice.
+
+4. Your work. Designs, drawings and exports you make with the Software belong
+   to you.
+
+5. Contributions. Contributions are welcome by invitation. To offer one, open
+   an issue at https://github.com/courteccles/bikestudio-community. A
+   contribution is accepted only after you sign a contributor agreement.
+
+6. No warranty. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+   KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+   BikeStudio is a design aid. Check every design independently before you
+   build or ride it.
+
+7. Limitation of liability. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE
+   FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+   TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+   OR THE USE OF OR OTHER DEALINGS IN THE SOFTWARE, INCLUDING ANY FRAME OR
+   COMPONENT BUILT FROM A DESIGN MADE WITH IT.
+
+8. Termination. This licence ends automatically if you break its terms.
+
+Versions of the Software published before 12 November 2026 under the MIT or
+Apache-2.0 licences remain under those licences. This licence covers all
+later versions.

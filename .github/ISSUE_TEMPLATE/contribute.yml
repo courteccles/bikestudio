@@ -1,0 +1,9 @@
+name: Offer to contribute
+description: Tell us what you'd like to work on.
+labels: [contribution]
+body:
+  - type: textarea
+    attributes: {label: What would you like to contribute?, description: "Code, component data, testing, documentation or something else."}
+    validations: {required: true}
+  - type: textarea
+    attributes: {label: Relevant experience, description: "For example Rust, frame building or bike geometry."}

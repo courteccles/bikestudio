@@ -1,0 +1,11 @@
+name: Ask about a commercial licence
+description: For businesses with 10 or more people or US$1M or more in annual revenue.
+labels: [licensing]
+body:
+  - type: markdown
+    attributes: {value: "Issues are public. Don't post anything confidential here. We'll arrange a private channel."}
+  - type: input
+    attributes: {label: Business name}
+  - type: textarea
+    attributes: {label: How do you plan to use BikeStudio?}
+    validations: {required: true}

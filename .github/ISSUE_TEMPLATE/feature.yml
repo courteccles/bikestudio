@@ -1,0 +1,9 @@
+name: Suggest a feature or component
+description: An idea, or a fork, shock, drive unit or other part to add.
+labels: [suggestion]
+body:
+  - type: textarea
+    attributes: {label: Your suggestion}
+    validations: {required: true}
+  - type: input
+    attributes: {label: Source, description: "For components, a link to the maker's published data."}
