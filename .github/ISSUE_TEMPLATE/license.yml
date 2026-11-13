@@ -1,4 +1,4 @@
-name: Ask about a commercial licence
+name: Ask about a commercial license
 description: For businesses with more than 4 people, or US$25K or more in annual revenue or funding raised.
 labels: [licensing]
 body:
@@ -7,5 +7,5 @@ body:
   - type: input
     attributes: {label: Business name}
   - type: textarea
-    attributes: {label: How do you plan to use BikeStudio?}
+    attributes: {label: How do you plan to use bikestudio?}
     validations: {required: true}

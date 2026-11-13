@@ -1,5 +1,5 @@
 name: Report a bug
-description: Something in BikeStudio doesn't work as expected.
+description: Something in bikestudio doesn't work as expected.
 labels: [bug]
 body:
   - type: textarea
@@ -8,4 +8,4 @@ body:
   - type: textarea
     attributes: {label: Steps to reproduce}
   - type: input
-    attributes: {label: BikeStudio version and operating system}
+    attributes: {label: bikestudio version and operating system}

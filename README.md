@@ -20,16 +20,10 @@ The bend tool. Drag on a tube to place bends, then set each bend's position and 
 
 ![The bend tool on the down tube: two bends with their dimensions drawn on the frame and the Bend tool panel on the right](screenshots/bend-tool.png)
 
-## Get in touch
+## License
 
-[Open an issue](https://github.com/courteccles/bikestudio-community/issues/new/choose) to:
+bikestudio is free to use but it isn't open source. Businesses over certain limits need a commercial license. See [`LICENSE`](LICENSE) for the full terms.
 
-- **Offer to contribute** code, component data or testing
-- **Report a bug** or **suggest a feature**
-- **Ask about a commercial licence**
+## Contributing and contact
 
-Issues are public, so don't post anything private. If you need to share private details, say so in the issue and we'll arrange another way to talk.
-
-## Licence
-
-BikeStudio is free to use but it isn't open source. Businesses over certain limits need a commercial licence. See [`LICENSE`](LICENSE) for the full terms.
+If you'd like to contribute, report a bug, suggest a component, or ask about a commercial license, open an issue at [courteccles/bikestudio-community](https://github.com/courteccles/bikestudio-community/issues). Contributions are by invitation and need a signed contributor agreement.
